@@ -610,24 +610,6 @@ export default function Home() {
     [isStreaming, stop]
   )
 
-  const clearActiveThread = React.useCallback(() => {
-    if (!activeThread) {
-      return
-    }
-
-    if (isStreaming) {
-      stop()
-    }
-
-    setMessages([])
-    updateActiveThread((thread) => ({
-      ...thread,
-      title: "New chat",
-      updatedAt: new Date().toISOString(),
-      messages: [],
-    }))
-  }, [activeThread, isStreaming, setMessages, stop, updateActiveThread])
-
   const deleteThread = React.useCallback(
     (id: string) => {
       if (isStreaming && id === activeThread.id) {
@@ -849,14 +831,6 @@ export default function Home() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          <Button
-            variant="outline"
-            onClick={clearActiveThread}
-            disabled={!messages.length || isStreaming}
-          >
-            <Trash2Icon data-icon="inline-start" />
-            Clear chat
-          </Button>
           <Button variant="outline" onClick={() => setSettingsOpen(true)}>
             <SettingsIcon data-icon="inline-start" />
             Settings
