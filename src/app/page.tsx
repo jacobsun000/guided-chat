@@ -58,7 +58,6 @@ import {
 } from "@/components/ui/field"
 import {
   InputGroup,
-  InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
@@ -376,6 +375,7 @@ export default function Home() {
   const [store, setStore] = React.useState<ThreadsStore>(initialStore)
   const [keys, setKeys] = React.useState<StoredKeys>({})
   const [input, setInput] = React.useState("")
+  const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null)
   const [loaded, setLoaded] = React.useState(false)
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   const [renameThreadId, setRenameThreadId] = React.useState<string | null>(
@@ -454,6 +454,18 @@ export default function Home() {
   const selectedModelMeta = selectedProviderMeta.models.find(
     (model) => model.value === activeThread?.settings.model
   )
+
+  React.useLayoutEffect(() => {
+    const textarea = composerTextareaRef.current
+
+    if (!textarea) {
+      return
+    }
+
+    textarea.style.height = "auto"
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 192)}px`
+    textarea.style.overflowY = textarea.scrollHeight > 192 ? "auto" : "hidden"
+  }, [input])
 
   React.useEffect(() => {
     const nextStore = loadThreadsStore()
@@ -967,8 +979,9 @@ export default function Home() {
               )}
 
               <form onSubmit={submit}>
-                <InputGroup className="h-auto min-h-24 items-stretch bg-card shadow-sm">
+                <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
                   <InputGroupTextarea
+                    ref={composerTextareaRef}
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
                     onKeyDown={(event) => {
@@ -978,65 +991,55 @@ export default function Home() {
                       }
                     }}
                     placeholder="Message..."
-                    rows={3}
+                    rows={1}
                     disabled={isStreaming}
+                    className="max-h-48 min-h-8 py-1.5"
                   />
-                  <InputGroupAddon
-                    align="block-end"
-                    className="justify-between border-t"
-                  >
-                    <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                      <span className="truncate">{selectedProviderMeta.label}</span>
-                      <span className="truncate">
-                        {selectedModelMeta?.label ?? activeThread.settings.model}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
+                  <div className="flex shrink-0 items-center gap-1 pb-0.5">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InputGroupButton
+                          size="icon-sm"
+                          onClick={regenerateLast}
+                          disabled={!messages.length || isStreaming}
+                        >
+                          <RefreshCwIcon />
+                          <span className="sr-only">Regenerate</span>
+                        </InputGroupButton>
+                      </TooltipTrigger>
+                      <TooltipContent>Regenerate</TooltipContent>
+                    </Tooltip>
+                    {isStreaming ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <InputGroupButton
                             size="icon-sm"
-                            onClick={regenerateLast}
-                            disabled={!messages.length || isStreaming}
+                            variant="outline"
+                            onClick={stop}
                           >
-                            <RefreshCwIcon />
-                            <span className="sr-only">Regenerate</span>
+                            <SquareIcon />
+                            <span className="sr-only">Stop</span>
                           </InputGroupButton>
                         </TooltipTrigger>
-                        <TooltipContent>Regenerate</TooltipContent>
+                        <TooltipContent>Stop</TooltipContent>
                       </Tooltip>
-                      {isStreaming ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <InputGroupButton
-                              size="icon-sm"
-                              variant="outline"
-                              onClick={stop}
-                            >
-                              <SquareIcon />
-                              <span className="sr-only">Stop</span>
-                            </InputGroupButton>
-                          </TooltipTrigger>
-                          <TooltipContent>Stop</TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <InputGroupButton
-                              type="submit"
-                              size="icon-sm"
-                              variant="default"
-                              disabled={!input.trim()}
-                            >
-                              <SendIcon />
-                              <span className="sr-only">Send</span>
-                            </InputGroupButton>
-                          </TooltipTrigger>
-                          <TooltipContent>Send</TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                  </InputGroupAddon>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <InputGroupButton
+                            type="submit"
+                            size="icon-sm"
+                            variant="default"
+                            disabled={!input.trim()}
+                          >
+                            <SendIcon />
+                            <span className="sr-only">Send</span>
+                          </InputGroupButton>
+                        </TooltipTrigger>
+                        <TooltipContent>Send</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                 </InputGroup>
               </form>
             </div>
