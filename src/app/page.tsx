@@ -20,13 +20,11 @@ import {
   SettingsIcon,
   SquareIcon,
   Trash2Icon,
-  UserIcon,
   XIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -101,6 +99,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
+import { useTheme, type Theme } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 
 type ProviderId = "openai" | "anthropic" | "google"
@@ -138,24 +137,86 @@ const THREADS_STORAGE_KEY = "guided-chat.threads.v1"
 
 const PROVIDERS: Record<
   ProviderId,
-  { label: string; defaultModel: string; keyLabel: string }
+  {
+    label: string
+    defaultModel: string
+    keyLabel: string
+    models: { label: string; value: string; description: string }[]
+  }
 > = {
   openai: {
     label: "OpenAI",
-    defaultModel: "gpt-5",
+    defaultModel: "gpt-5.5",
     keyLabel: "OpenAI API key",
+    models: [
+      {
+        label: "GPT-5.5",
+        value: "gpt-5.5",
+        description: "Flagship",
+      },
+      {
+        label: "GPT-5.4 mini",
+        value: "gpt-5.4-mini",
+        description: "Faster",
+      },
+      {
+        label: "GPT-5.4 nano",
+        value: "gpt-5.4-nano",
+        description: "Lowest cost",
+      },
+    ],
   },
   anthropic: {
     label: "Anthropic",
-    defaultModel: "claude-sonnet-4.5",
+    defaultModel: "claude-sonnet-4-6",
     keyLabel: "Anthropic API key",
+    models: [
+      {
+        label: "Claude Haiku 4.5",
+        value: "claude-haiku-4-5",
+        description: "Fastest",
+      },
+      {
+        label: "Claude Sonnet 4.6",
+        value: "claude-sonnet-4-6",
+        description: "Balanced",
+      },
+      {
+        label: "Claude Opus 4.8",
+        value: "claude-opus-4-8",
+        description: "Most capable",
+      },
+    ],
   },
   google: {
     label: "Google",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.5-flash",
     keyLabel: "Google API key",
+    models: [
+      {
+        label: "Gemini 3.1 Flash-Lite",
+        value: "gemini-3.1-flash-lite",
+        description: "Fastest",
+      },
+      {
+        label: "Gemini 3.5 Flash",
+        value: "gemini-3.5-flash",
+        description: "Stable",
+      },
+      {
+        label: "Gemini 3.1 Pro",
+        value: "gemini-3.1-pro",
+        description: "Advanced",
+      },
+    ],
   },
 }
+
+const THEMES: { label: string; value: Theme }[] = [
+  { label: "System", value: "system" },
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+]
 
 const DEFAULT_PROVIDER_OPTIONS: ProviderOptionsJson = {
   openai: "{}",
@@ -310,6 +371,7 @@ function loadKeys(): StoredKeys {
 }
 
 export default function Home() {
+  const { theme, setTheme } = useTheme()
   const initialStore = React.useMemo(() => createDefaultStore(), [])
   const [store, setStore] = React.useState<ThreadsStore>(initialStore)
   const [keys, setKeys] = React.useState<StoredKeys>({})
@@ -389,6 +451,9 @@ export default function Home() {
   const selectedProvider = activeThread?.settings.provider ?? "openai"
   const selectedProviderMeta = PROVIDERS[selectedProvider]
   const hasSelectedKey = Boolean(keys[selectedProvider]?.trim())
+  const selectedModelMeta = selectedProviderMeta.models.find(
+    (model) => model.value === activeThread?.settings.model
+  )
 
   React.useEffect(() => {
     const nextStore = loadThreadsStore()
@@ -486,6 +551,21 @@ export default function Home() {
             ...thread.settings.providerOptions,
             [provider]: value,
           },
+        },
+      }))
+    },
+    [updateActiveThread]
+  )
+
+  const updateActiveProvider = React.useCallback(
+    (provider: ProviderId) => {
+      updateActiveThread((thread) => ({
+        ...thread,
+        updatedAt: new Date().toISOString(),
+        settings: {
+          ...thread.settings,
+          provider,
+          model: PROVIDERS[provider].defaultModel,
         },
       }))
     },
@@ -757,6 +837,14 @@ export default function Home() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          <Button
+            variant="outline"
+            onClick={clearActiveThread}
+            disabled={!messages.length || isStreaming}
+          >
+            <Trash2Icon data-icon="inline-start" />
+            Clear chat
+          </Button>
           <Button variant="outline" onClick={() => setSettingsOpen(true)}>
             <SettingsIcon data-icon="inline-start" />
             Settings
@@ -773,30 +861,51 @@ export default function Home() {
             <Separator orientation="vertical" className="h-5" />
             <div className="min-w-0">
               <h1 className="truncate text-sm font-medium">{activeThread.title}</h1>
-              <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                <span className="truncate">{selectedProviderMeta.label}</span>
-                <span className="truncate">{activeThread.settings.model}</span>
+              <div className="truncate text-xs text-muted-foreground">
+                {messages.length} messages
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Badge variant={hasSelectedKey ? "secondary" : "outline"}>
-              {hasSelectedKey ? "Key set" : "Missing key"}
-            </Badge>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={clearActiveThread}
-                  disabled={!messages.length || isStreaming}
-                >
-                  <Trash2Icon />
-                  <span className="sr-only">Clear chat</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Clear chat</TooltipContent>
-            </Tooltip>
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+            <Select
+              value={selectedProvider}
+              onValueChange={(value) => updateActiveProvider(value as ProviderId)}
+            >
+              <SelectTrigger className="h-8 w-[128px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {Object.entries(PROVIDERS).map(([id, provider]) => (
+                    <SelectItem key={id} value={id}>
+                      {provider.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Select
+              value={activeThread.settings.model}
+              onValueChange={(model) => updateActiveSettings({ model })}
+            >
+              <SelectTrigger className="h-8 w-[188px] max-w-[42vw]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {!selectedModelMeta && (
+                    <SelectItem value={activeThread.settings.model}>
+                      {activeThread.settings.model}
+                    </SelectItem>
+                  )}
+                  {selectedProviderMeta.models.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </header>
 
@@ -858,7 +967,7 @@ export default function Home() {
               )}
 
               <form onSubmit={submit}>
-                <InputGroup className="h-auto min-h-24 items-stretch">
+                <InputGroup className="h-auto min-h-24 items-stretch bg-card shadow-sm">
                   <InputGroupTextarea
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
@@ -876,12 +985,10 @@ export default function Home() {
                     align="block-end"
                     className="justify-between border-t"
                   >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Badge variant="outline" className="truncate">
-                        {selectedProviderMeta.label}
-                      </Badge>
-                      <span className="truncate text-muted-foreground">
-                        {activeThread.settings.model}
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">{selectedProviderMeta.label}</span>
+                      <span className="truncate">
+                        {selectedModelMeta?.label ?? activeThread.settings.model}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -942,9 +1049,11 @@ export default function Home() {
         onOpenChange={setSettingsOpen}
         thread={activeThread}
         keys={keys}
+        theme={theme}
         providerOptionsError={providerOptionsError}
         setProviderOptionsError={setProviderOptionsError}
         onKeysChange={setKeys}
+        onThemeChange={setTheme}
         onSettingsChange={updateActiveSettings}
         onProviderOptionsChange={updateProviderOptionText}
       />
@@ -1006,25 +1115,22 @@ function MessageBubble({
   return (
     <article
       className={cn(
-        "group/message flex gap-3",
+        "group/message flex",
         isUser ? "justify-end" : "justify-start"
       )}
     >
-      {!isUser && (
-        <div className="mt-1 flex size-7 shrink-0 items-center justify-center border bg-muted">
-          <BotIcon />
-        </div>
-      )}
       <div
         className={cn(
-          "flex max-w-[min(42rem,85%)] flex-col gap-2",
-          isUser && "items-end"
+          "flex flex-col gap-1",
+          isUser ? "max-w-[min(38rem,82%)] items-end" : "w-full max-w-full"
         )}
       >
         <div
           className={cn(
-            "whitespace-pre-wrap border px-3 py-2 text-sm leading-6",
-            isUser ? "bg-primary text-primary-foreground" : "bg-card"
+            "whitespace-pre-wrap text-sm leading-6",
+            isUser
+              ? "border bg-primary px-2.5 py-1.5 text-primary-foreground"
+              : "text-foreground"
           )}
         >
           {text || (
@@ -1046,11 +1152,6 @@ function MessageBubble({
           </Tooltip>
         </div>
       </div>
-      {isUser && (
-        <div className="mt-1 flex size-7 shrink-0 items-center justify-center border bg-muted">
-          <UserIcon />
-        </div>
-      )}
     </article>
   )
 }
@@ -1060,9 +1161,11 @@ function SettingsDialog({
   onOpenChange,
   thread,
   keys,
+  theme,
   providerOptionsError,
   setProviderOptionsError,
   onKeysChange,
+  onThemeChange,
   onSettingsChange,
   onProviderOptionsChange,
 }: {
@@ -1070,9 +1173,11 @@ function SettingsDialog({
   onOpenChange: (open: boolean) => void
   thread: ChatThread
   keys: StoredKeys
+  theme: Theme
   providerOptionsError: string | null
   setProviderOptionsError: (error: string | null) => void
   onKeysChange: React.Dispatch<React.SetStateAction<StoredKeys>>
+  onThemeChange: (theme: Theme) => void
   onSettingsChange: (patch: Partial<ChatSettings>) => void
   onProviderOptionsChange: (provider: ProviderId, value: string) => void
 }) {
@@ -1085,24 +1190,26 @@ function SettingsDialog({
   const setProvider = (provider: ProviderId) => {
     onSettingsChange({
       provider,
-      model:
-        settings.model === PROVIDERS[settings.provider].defaultModel
-          ? PROVIDERS[provider].defaultModel
-          : settings.model,
+      model: PROVIDERS[provider].defaultModel,
     })
   }
 
-  const validateCurrentProviderOptions = () => {
+  const saveSettings = () => {
     try {
       parseProviderOptions(settings.providerOptions[settings.provider])
       setProviderOptionsError(null)
-      toast.success("Provider options JSON is valid")
+      onOpenChange(false)
+      toast.success("Settings saved")
     } catch (err) {
       setProviderOptionsError(
         err instanceof Error ? err.message : "Provider options JSON is invalid."
       )
     }
   }
+
+  const selectedModelMeta = PROVIDERS[settings.provider].models.find(
+    (model) => model.value === settings.model
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1146,16 +1253,57 @@ function SettingsDialog({
                   </Select>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="model-id">Model ID</FieldLabel>
-                  <Input
-                    id="model-id"
+                  <FieldLabel>Model</FieldLabel>
+                  <Select
                     value={settings.model}
-                    onChange={(event) =>
-                      onSettingsChange({ model: event.target.value })
-                    }
-                  />
+                    onValueChange={(model) => onSettingsChange({ model })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {!selectedModelMeta && (
+                          <SelectItem value={settings.model}>
+                            {settings.model}
+                          </SelectItem>
+                        )}
+                        {PROVIDERS[settings.provider].models.map((model) => (
+                          <SelectItem key={model.value} value={model.value}>
+                            {model.label} · {model.description}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   <FieldDescription>
-                    Default: {PROVIDERS[settings.provider].defaultModel}
+                    Current model ID: {settings.model}
+                  </FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel>Theme</FieldLabel>
+                  <Select
+                    value={theme}
+                    onValueChange={(value) => onThemeChange(value as Theme)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {THEMES.map((themeOption) => (
+                          <SelectItem
+                            key={themeOption.value}
+                            value={themeOption.value}
+                          >
+                            {themeOption.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    System follows the current OS color scheme.
                   </FieldDescription>
                 </Field>
                 <Field>
@@ -1261,9 +1409,9 @@ function SettingsDialog({
             <XIcon data-icon="inline-start" />
             Close
           </Button>
-          <Button onClick={validateCurrentProviderOptions}>
+          <Button onClick={saveSettings}>
             <CheckIcon data-icon="inline-start" />
-            Validate JSON
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>
