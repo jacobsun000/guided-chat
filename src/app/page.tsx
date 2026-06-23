@@ -223,6 +223,9 @@ const DEFAULT_PROVIDER_OPTIONS: ProviderOptionsJson = {
   google: "{}",
 }
 
+const HYDRATION_THREAD_TIMESTAMP = "1970-01-01T00:00:00.000Z"
+const HYDRATION_THREAD_ID = "hydration-thread"
+
 function createDefaultSettings(): ChatSettings {
   return {
     provider: "openai",
@@ -242,11 +245,17 @@ function createId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 }
 
-function createThread(): ChatThread {
-  const now = new Date().toISOString()
+function createThread({
+  id = createId(),
+  timestamp = new Date().toISOString(),
+}: {
+  id?: string
+  timestamp?: string
+} = {}): ChatThread {
+  const now = timestamp
 
   return {
-    id: createId(),
+    id,
     title: "New chat",
     createdAt: now,
     updatedAt: now,
@@ -257,6 +266,19 @@ function createThread(): ChatThread {
 
 function createDefaultStore(): ThreadsStore {
   const thread = createThread()
+
+  return {
+    version: 1,
+    activeThreadId: thread.id,
+    threads: [thread],
+  }
+}
+
+function createHydrationStore(): ThreadsStore {
+  const thread = createThread({
+    id: HYDRATION_THREAD_ID,
+    timestamp: HYDRATION_THREAD_TIMESTAMP,
+  })
 
   return {
     version: 1,
@@ -371,7 +393,7 @@ function loadKeys(): StoredKeys {
 
 export default function Home() {
   const { theme, setTheme } = useTheme()
-  const initialStore = React.useMemo(() => createDefaultStore(), [])
+  const initialStore = React.useMemo(() => createHydrationStore(), [])
   const [store, setStore] = React.useState<ThreadsStore>(initialStore)
   const [keys, setKeys] = React.useState<StoredKeys>({})
   const [input, setInput] = React.useState("")
