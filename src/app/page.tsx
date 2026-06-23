@@ -867,11 +867,8 @@ export default function Home() {
               <PanelLeftIcon />
             </SidebarTrigger>
             <Separator orientation="vertical" className="h-5" />
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-center">
               <h1 className="truncate text-sm font-medium">{activeThread.title}</h1>
-              <div className="truncate text-xs text-muted-foreground">
-                {messages.length} messages
-              </div>
             </div>
           </div>
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
