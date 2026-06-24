@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["arch"],
+  allowedDevOrigins: ["arch", "chat.jacobsun.xyz"],
 };
 
 export default nextConfig;
