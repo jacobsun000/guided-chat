@@ -101,36 +101,19 @@ import {
 } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { useTheme, type Theme } from "@/components/theme-provider"
+import {
+  DEFAULT_PROVIDER_OPTIONS,
+  createDefaultSettings,
+  createDefaultStore,
+  createThread,
+  type ChatSettings,
+  type ChatThread,
+  type ProviderId,
+  type ThreadsStore,
+} from "@/lib/chat-store"
 import { cn } from "@/lib/utils"
 
-type ProviderId = "openai" | "anthropic" | "google"
-
 type StoredKeys = Partial<Record<ProviderId, string>>
-
-type ProviderOptionsJson = Record<ProviderId, string>
-
-type ChatSettings = {
-  provider: ProviderId
-  model: string
-  temperature: number
-  maxOutputTokens: number
-  providerOptions: ProviderOptionsJson
-}
-
-type ChatThread = {
-  id: string
-  title: string
-  createdAt: string
-  updatedAt: string
-  messages: UIMessage[]
-  settings: ChatSettings
-}
-
-type ThreadsStore = {
-  version: 1
-  activeThreadId: string
-  threads: ChatThread[]
-}
 
 const KEYS_STORAGE_KEY = "guided-chat.keys.v1"
 const THREADS_STORAGE_KEY = "guided-chat.threads.v1"
@@ -218,61 +201,8 @@ const THEMES: { label: string; value: Theme }[] = [
   { label: "Dark", value: "dark" },
 ]
 
-const DEFAULT_PROVIDER_OPTIONS: ProviderOptionsJson = {
-  openai: "{}",
-  anthropic: "{}",
-  google: "{}",
-}
-
 const HYDRATION_THREAD_TIMESTAMP = "1970-01-01T00:00:00.000Z"
 const HYDRATION_THREAD_ID = "hydration-thread"
-
-function createDefaultSettings(): ChatSettings {
-  return {
-    provider: "openai",
-    model: PROVIDERS.openai.defaultModel,
-    temperature: 0.7,
-    maxOutputTokens: 1024,
-    providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
-  }
-}
-
-function createId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID()
-  }
-
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-}
-
-function createThread({
-  id = createId(),
-  timestamp = new Date().toISOString(),
-}: {
-  id?: string
-  timestamp?: string
-} = {}): ChatThread {
-  const now = timestamp
-
-  return {
-    id,
-    title: "New chat",
-    createdAt: now,
-    updatedAt: now,
-    messages: [],
-    settings: createDefaultSettings(),
-  }
-}
-
-function createDefaultStore(): ThreadsStore {
-  const thread = createThread()
-
-  return {
-    version: 1,
-    activeThreadId: thread.id,
-    threads: [thread],
-  }
-}
 
 function createHydrationStore(): ThreadsStore {
   const thread = createThread({
@@ -342,7 +272,41 @@ function normalizeStoredThread(thread: ChatThread): ChatThread {
   }
 }
 
-function loadThreadsStore(): ThreadsStore {
+function normalizeThreadsStore(store: ThreadsStore): ThreadsStore {
+  const fallback = createDefaultStore()
+
+  const threads = Array.isArray(store.threads)
+    ? store.threads.map(normalizeStoredThread)
+    : []
+
+  if (!threads.length) {
+    return fallback
+  }
+
+  const activeThreadId = threads.some(
+    (thread) => thread.id === store.activeThreadId
+  )
+    ? store.activeThreadId
+    : threads[0].id
+
+  return {
+    version: 1,
+    activeThreadId,
+    threads,
+  }
+}
+
+async function loadRemoteThreadsStore(): Promise<ThreadsStore> {
+  const response = await fetch("/api/threads", { cache: "no-store" })
+
+  if (!response.ok) {
+    throw new Error("Unable to load chat history.")
+  }
+
+  return normalizeThreadsStore((await response.json()) as ThreadsStore)
+}
+
+function loadLocalThreadsStore(): ThreadsStore {
   const fallback = createDefaultStore()
   const raw = localStorage.getItem(THREADS_STORAGE_KEY)
 
@@ -352,25 +316,7 @@ function loadThreadsStore(): ThreadsStore {
 
   try {
     const parsed = JSON.parse(raw) as ThreadsStore
-    const threads = Array.isArray(parsed.threads)
-      ? parsed.threads.map(normalizeStoredThread)
-      : []
-
-    if (!threads.length) {
-      return fallback
-    }
-
-    const activeThreadId = threads.some(
-      (thread) => thread.id === parsed.activeThreadId
-    )
-      ? parsed.activeThreadId
-      : threads[0].id
-
-    return {
-      version: 1,
-      activeThreadId,
-      threads,
-    }
+    return normalizeThreadsStore(parsed)
   } catch {
     return fallback
   }
@@ -495,11 +441,36 @@ export default function Home() {
   }, [input])
 
   React.useEffect(() => {
-    const nextStore = loadThreadsStore()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStore(nextStore)
-    setKeys(loadKeys())
-    setLoaded(true)
+    let cancelled = false
+
+    async function loadInitialState() {
+      setKeys(loadKeys())
+
+      try {
+        const nextStore = await loadRemoteThreadsStore()
+
+        if (!cancelled) {
+          setStore(nextStore)
+        }
+      } catch (err) {
+        console.error(err)
+
+        if (!cancelled) {
+          setStore(loadLocalThreadsStore())
+          toast.error("Using browser chat history because the database is unavailable.")
+        }
+      } finally {
+        if (!cancelled) {
+          setLoaded(true)
+        }
+      }
+    }
+
+    void loadInitialState()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   React.useEffect(() => {
@@ -515,7 +486,26 @@ export default function Home() {
       return
     }
 
-    localStorage.setItem(THREADS_STORAGE_KEY, JSON.stringify(store))
+    const timeoutId = window.setTimeout(() => {
+      void fetch("/api/threads", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(store),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Unable to save chat history to the database.")
+          }
+        })
+        .catch((err) => {
+          console.error(err)
+          toast.error("Unable to save chat history to the database.")
+        })
+    }, 250)
+
+    return () => window.clearTimeout(timeoutId)
   }, [loaded, store])
 
   React.useEffect(() => {
@@ -794,7 +784,7 @@ export default function Home() {
               <div className="min-w-0">
                 <div className="truncate text-xs font-medium">Guided Chat</div>
                 <div className="truncate text-xs text-muted-foreground">
-                  Local conversations
+                  Shared workspace
                 </div>
               </div>
             </div>
@@ -929,8 +919,8 @@ export default function Home() {
                     </EmptyMedia>
                     <EmptyTitle>Start a conversation</EmptyTitle>
                     <EmptyDescription>
-                      Messages stay in this browser. Provider keys are sent only
-                      with the selected request.
+                      Messages are saved to the shared workspace. Provider keys
+                      are sent only with the selected request.
                     </EmptyDescription>
                   </EmptyHeader>
                   <EmptyContent>
