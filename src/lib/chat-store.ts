@@ -38,7 +38,7 @@ export function createDefaultSettings(): ChatSettings {
     provider: "openai",
     model: "gpt-5.5",
     temperature: 0.7,
-    maxOutputTokens: 1024,
+    maxOutputTokens: 131072,
     providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
   }
 }
