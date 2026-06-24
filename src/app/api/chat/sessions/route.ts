@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       : undefined
   const maxOutputTokens =
     typeof body.maxOutputTokens === "number" &&
-    Number.isFinite(body.maxOutputTokens)
+      Number.isFinite(body.maxOutputTokens)
       ? Math.max(1, Math.floor(body.maxOutputTokens))
       : undefined
 

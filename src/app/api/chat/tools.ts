@@ -2,6 +2,11 @@ import { tavilySearch } from "@tavily/ai-sdk"
 import { tool, type ToolSet } from "ai"
 import { z } from "zod"
 
+import {
+  askUserQuestionsInputSchema,
+  askUserQuestionsOutputSchema,
+} from "@/lib/question-tool"
+
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 type ReadImageResult = {
@@ -12,6 +17,7 @@ type ReadImageResult = {
 
 export function createAgentTools() {
   const tools: ToolSet = {
+    ask_user_questions: createAskUserQuestionsTool(),
     read_image: createReadImageTool(),
   }
 
@@ -22,6 +28,15 @@ export function createAgentTools() {
   }
 
   return tools
+}
+
+function createAskUserQuestionsTool() {
+  return tool({
+    description:
+      "Ask the user targeted questions when their input is needed to continue productively. Use this for clarifying research uncertainty, guiding progressive exploration, or checking understanding.",
+    inputSchema: askUserQuestionsInputSchema,
+    outputSchema: askUserQuestionsOutputSchema,
+  })
 }
 
 function createReadImageTool() {

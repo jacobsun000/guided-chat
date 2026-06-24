@@ -2,7 +2,10 @@
 
 import * as React from "react"
 import type { UIMessage } from "ai"
-import { DefaultChatTransport } from "ai"
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from "ai"
 import { useChat } from "@ai-sdk/react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -27,6 +30,7 @@ import {
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -95,6 +99,7 @@ import { HtmlOutputBlock } from "@/components/html-output-block"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Tooltip,
   TooltipContent,
@@ -112,6 +117,11 @@ import {
   type ProviderId,
   type ThreadsStore,
 } from "@/lib/chat-store"
+import type {
+  AskUserQuestionsInput,
+  AskUserQuestionsOutput,
+  ResearchAssistantMessage,
+} from "@/lib/question-tool"
 import { cn } from "@/lib/utils"
 
 const ACCESS_TOKEN_STORAGE_KEY = "guided-chat.access-token.v1"
@@ -198,6 +208,12 @@ const THEMES: { label: string; value: Theme }[] = [
 
 const HYDRATION_THREAD_TIMESTAMP = "1970-01-01T00:00:00.000Z"
 const HYDRATION_THREAD_ID = "hydration-thread"
+const OTHER_ANSWER_VALUE = "__other__"
+
+type AskUserQuestionsPart = Extract<
+  ResearchAssistantMessage["parts"][number],
+  { type: "tool-ask_user_questions" }
+>
 
 function createHydrationStore(): ThreadsStore {
   const thread = createThread({
@@ -217,6 +233,37 @@ function getMessageText(message: UIMessage) {
     .filter((part) => part.type === "text")
     .map((part) => part.text)
     .join("")
+}
+
+function getPendingQuestionPart(messages: ResearchAssistantMessage[]) {
+  for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
+    const message = messages[messageIndex]
+
+    if (message.role !== "assistant") {
+      continue
+    }
+
+    for (let partIndex = message.parts.length - 1; partIndex >= 0; partIndex -= 1) {
+      const part = message.parts[partIndex]
+
+      if (
+        part.type === "tool-ask_user_questions" &&
+        part.state === "input-available"
+      ) {
+        return part
+      }
+    }
+  }
+
+  return null
+}
+
+function isVisibleAssistantPart(part: ResearchAssistantMessage["parts"][number]) {
+  return (
+    part.type === "text" ||
+    (part.type === "tool-ask_user_questions" &&
+      (part.state === "output-available" || part.state === "output-error"))
+  )
 }
 
 function titleFromText(text: string) {
@@ -348,7 +395,7 @@ export default function Home() {
   const activeThreadId = activeThread?.id
 
   const transport = React.useMemo(
-    () => new DefaultChatTransport<UIMessage>({ api: "/api/chat" }),
+    () => new DefaultChatTransport<ResearchAssistantMessage>({ api: "/api/chat" }),
     []
   )
 
@@ -358,13 +405,15 @@ export default function Home() {
     sendMessage,
     regenerate,
     stop,
+    addToolOutput,
     status,
     error,
     clearError,
-  } = useChat({
+  } = useChat<ResearchAssistantMessage>({
     id: activeThread?.id,
-    messages: activeThread?.messages ?? [],
+    messages: (activeThread?.messages ?? []) as ResearchAssistantMessage[],
     transport,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError: (err) => {
       setComposerError(err.message)
     },
@@ -400,6 +449,11 @@ export default function Home() {
   })
 
   const isStreaming = status === "submitted" || status === "streaming"
+  const pendingQuestionPart = React.useMemo(
+    () => (isStreaming ? null : getPendingQuestionPart(messages)),
+    [isStreaming, messages]
+  )
+  const hasPendingQuestion = pendingQuestionPart != null
   const selectedProvider = activeThread?.settings.provider ?? "openai"
   const selectedProviderMeta = PROVIDERS[selectedProvider]
   const hasAccessToken = Boolean(accessToken.trim())
@@ -500,7 +554,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setComposerError(null)
     setProviderOptionsError(null)
-    setMessages(thread.messages)
+    setMessages(thread.messages as ResearchAssistantMessage[])
     // This effect intentionally keys off the id only. Store changes for settings
     // or persistence must not reset the live chat message state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -685,7 +739,7 @@ export default function Home() {
 
       const text = input.trim()
 
-      if (!text || isStreaming) {
+      if (!text || isStreaming || hasPendingQuestion) {
         return
       }
 
@@ -721,6 +775,7 @@ export default function Home() {
       hasAccessToken,
       input,
       isStreaming,
+      hasPendingQuestion,
       sendMessage,
     ]
   )
@@ -755,6 +810,40 @@ export default function Home() {
     hasAccessToken,
     regenerate,
   ])
+
+  const submitQuestionAnswers = React.useCallback(
+    async (toolCallId: string, output: AskUserQuestionsOutput) => {
+      clearError()
+      setComposerError(null)
+
+      if (!hasAccessToken) {
+        setComposerError("Enter the workspace access token before continuing.")
+        setSettingsOpen(true)
+        return
+      }
+
+      try {
+        const requestBody = await createChatSession()
+        addToolOutput({
+          tool: "ask_user_questions",
+          toolCallId,
+          output,
+          options: {
+            body: requestBody,
+          },
+        })
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unable to submit the answers."
+        setComposerError(message)
+        if (message.includes("Provider options")) {
+          setProviderOptionsError(message)
+          setSettingsOpen(true)
+        }
+      }
+    },
+    [addToolOutput, clearError, createChatSession, hasAccessToken]
+  )
 
   const copyMessage = React.useCallback(async (message: UIMessage) => {
     const text = getMessageText(message)
@@ -968,6 +1057,15 @@ export default function Home() {
                 </Alert>
               )}
 
+              {pendingQuestionPart && (
+                <AskUserQuestionsPanel
+                  key={pendingQuestionPart.toolCallId}
+                  part={pendingQuestionPart}
+                  disabled={isStreaming}
+                  onSubmit={submitQuestionAnswers}
+                />
+              )}
+
               <form onSubmit={submit}>
                 <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
                   <InputGroupTextarea
@@ -980,9 +1078,11 @@ export default function Home() {
                         event.currentTarget.form?.requestSubmit()
                       }
                     }}
-                    placeholder="Message..."
+                    placeholder={
+                      hasPendingQuestion ? "Answer the questions above..." : "Message..."
+                    }
                     rows={1}
-                    disabled={isStreaming}
+                    disabled={isStreaming || hasPendingQuestion}
                     className="max-h-48 min-h-8 py-1.5"
                   />
                   <div className="flex shrink-0 items-center gap-1 pb-0.5">
@@ -991,7 +1091,7 @@ export default function Home() {
                         <InputGroupButton
                           size="icon-sm"
                           onClick={regenerateLast}
-                          disabled={!messages.length || isStreaming}
+                          disabled={!messages.length || isStreaming || hasPendingQuestion}
                         >
                           <RefreshCwIcon />
                           <span className="sr-only">Regenerate</span>
@@ -1020,7 +1120,7 @@ export default function Home() {
                             type="submit"
                             size="icon-sm"
                             variant="default"
-                            disabled={!input.trim()}
+                            disabled={!input.trim() || hasPendingQuestion}
                           >
                             <SendIcon />
                             <span className="sr-only">Send</span>
@@ -1099,11 +1199,14 @@ function MessageBubble({
   message,
   onCopy,
 }: {
-  message: UIMessage
+  message: ResearchAssistantMessage
   onCopy: () => void
 }) {
   const isUser = message.role === "user"
   const text = getMessageText(message)
+  const visibleAssistantParts = isUser
+    ? []
+    : message.parts.filter(isVisibleAssistantPart)
 
   return (
     <article
@@ -1126,8 +1229,26 @@ function MessageBubble({
               : "text-foreground"
           )}
         >
-          {text ? (
+          {isUser && text ? (
             <MarkdownContent text={text} isUser={isUser} />
+          ) : !isUser && visibleAssistantParts.length ? (
+            <div className="flex flex-col gap-3">
+              {visibleAssistantParts.map((part, index) => {
+                if (part.type === "text") {
+                  return (
+                    <MarkdownContent
+                      key={index}
+                      text={part.text}
+                      isUser={false}
+                    />
+                  )
+                }
+
+                return (
+                  <AnsweredQuestionsTranscript key={part.toolCallId} part={part} />
+                )
+              })}
+            </div>
           ) : (
             <span className="inline-flex items-center gap-2 text-muted-foreground">
               <Spinner />
@@ -1148,6 +1269,196 @@ function MessageBubble({
         </div>
       </div>
     </article>
+  )
+}
+
+function AskUserQuestionsPanel({
+  part,
+  disabled,
+  onSubmit,
+}: {
+  part: AskUserQuestionsPart & { state: "input-available" }
+  disabled: boolean
+  onSubmit: (toolCallId: string, output: AskUserQuestionsOutput) => void
+}) {
+  const input = part.input as AskUserQuestionsInput
+  const [selectedAnswers, setSelectedAnswers] = React.useState<
+    Record<string, string>
+  >({})
+  const [customAnswers, setCustomAnswers] = React.useState<Record<string, string>>(
+    {}
+  )
+
+  const allAnswered = input.questions.every((question) => {
+    const selected = selectedAnswers[question.id]
+
+    if (selected === OTHER_ANSWER_VALUE) {
+      return Boolean(customAnswers[question.id]?.trim())
+    }
+
+    return Boolean(selected)
+  })
+
+  const submitAnswers = () => {
+    if (!allAnswered || disabled) {
+      return
+    }
+
+    onSubmit(part.toolCallId, {
+      answers: input.questions.map((question) => {
+        const selected = selectedAnswers[question.id]
+        const customAnswer = customAnswers[question.id]?.trim()
+        const answer =
+          selected === OTHER_ANSWER_VALUE
+            ? customAnswer ?? ""
+            : question.options.find((option) => option.label === selected)?.label ??
+              selected ??
+              ""
+
+        return {
+          id: question.id,
+          question: question.question,
+          selectedOption:
+            selected && selected !== OTHER_ANSWER_VALUE ? selected : undefined,
+          customAnswer:
+            selected === OTHER_ANSWER_VALUE ? customAnswer : undefined,
+          answer,
+        }
+      }),
+    })
+  }
+
+  return (
+    <section className="border bg-card px-3 py-3 shadow-sm">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-sm font-medium">
+              {input.title ?? "Before I continue"}
+            </div>
+            <div className="text-xs leading-5 text-muted-foreground">
+              {input.purpose}
+            </div>
+          </div>
+          <Badge variant="secondary">Question</Badge>
+        </div>
+
+        <FieldGroup>
+          {input.questions.map((question, questionIndex) => {
+            const selected = selectedAnswers[question.id]
+            const isOther = selected === OTHER_ANSWER_VALUE
+
+            return (
+              <Field key={question.id}>
+                <FieldLabel>
+                  <span className="text-xs text-muted-foreground">
+                    {question.header || `Question ${questionIndex + 1}`}
+                  </span>
+                  <span>{question.question}</span>
+                </FieldLabel>
+                <ToggleGroup
+                  type="single"
+                  value={selected}
+                  onValueChange={(value) => {
+                    if (!value) {
+                      return
+                    }
+
+                    setSelectedAnswers((current) => ({
+                      ...current,
+                      [question.id]: value,
+                    }))
+                  }}
+                  orientation="vertical"
+                  className="w-full items-stretch"
+                  disabled={disabled}
+                >
+                  {question.options.map((option) => (
+                    <ToggleGroupItem
+                      key={option.label}
+                      value={option.label}
+                      variant="outline"
+                      className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
+                    >
+                      <span className="flex flex-col items-start gap-0.5">
+                        <span>{option.label}</span>
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {option.description}
+                        </span>
+                      </span>
+                    </ToggleGroupItem>
+                  ))}
+                  <ToggleGroupItem
+                    value={OTHER_ANSWER_VALUE}
+                    variant="outline"
+                    className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
+                  >
+                    Other
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                {isOther && (
+                  <Textarea
+                    value={customAnswers[question.id] ?? ""}
+                    onChange={(event) =>
+                      setCustomAnswers((current) => ({
+                        ...current,
+                        [question.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="Type your answer..."
+                    rows={2}
+                    disabled={disabled}
+                  />
+                )}
+              </Field>
+            )
+          })}
+        </FieldGroup>
+
+        <div className="flex justify-end">
+          <Button onClick={submitAnswers} disabled={!allAnswered || disabled}>
+            <CheckIcon data-icon="inline-start" />
+            Continue
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function AnsweredQuestionsTranscript({ part }: { part: AskUserQuestionsPart }) {
+  if (part.state === "output-error") {
+    return (
+      <Alert variant="destructive">
+        <AlertCircleIcon />
+        <AlertTitle>Question response failed</AlertTitle>
+        <AlertDescription>{part.errorText}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (part.state !== "output-available") {
+    return null
+  }
+
+  const input = part.input as AskUserQuestionsInput
+  const output = part.output as AskUserQuestionsOutput
+
+  return (
+    <div className="border bg-muted/30 px-3 py-2 text-sm">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="font-medium">{input.title ?? "Your answers"}</div>
+        <Badge variant="outline">Answered</Badge>
+      </div>
+      <div className="flex flex-col gap-2">
+        {output.answers.map((answer) => (
+          <div key={answer.id} className="grid gap-1">
+            <div className="text-xs text-muted-foreground">{answer.question}</div>
+            <div>{answer.answer}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
