@@ -7,6 +7,7 @@ export type ProviderOptionsJson = Record<ProviderId, string>
 export type ChatSettings = {
   provider: ProviderId
   model: string
+  thinkingEffort: string
   providerOptions: ProviderOptionsJson
 }
 
@@ -35,6 +36,7 @@ export function createDefaultSettings(): ChatSettings {
   return {
     provider: "openai",
     model: "gpt-5.5",
+    thinkingEffort: "default",
     providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
   }
 }

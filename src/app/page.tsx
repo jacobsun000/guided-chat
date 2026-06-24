@@ -133,6 +133,7 @@ const PROVIDERS: Record<
     label: string
     defaultModel: string
     models: { label: string; value: string; description: string }[]
+    thinkingEffortOptions: { label: string; value: string; description: string }[]
   }
 > = {
   openai: {
@@ -155,6 +156,15 @@ const PROVIDERS: Record<
         description: "Lowest cost",
       },
     ],
+    thinkingEffortOptions: [
+      { label: "Default", value: "default", description: "Provider default" },
+      { label: "None", value: "none", description: "Disable reasoning" },
+      { label: "Minimal", value: "minimal", description: "Smallest reasoning" },
+      { label: "Low", value: "low", description: "Light reasoning" },
+      { label: "Medium", value: "medium", description: "Balanced reasoning" },
+      { label: "High", value: "high", description: "Deeper reasoning" },
+      { label: "X High", value: "xhigh", description: "Maximum OpenAI effort" },
+    ],
   },
   anthropic: {
     label: "Anthropic",
@@ -176,6 +186,14 @@ const PROVIDERS: Record<
         description: "Most capable",
       },
     ],
+    thinkingEffortOptions: [
+      { label: "Default", value: "default", description: "Provider default" },
+      { label: "Low", value: "low", description: "Light thinking" },
+      { label: "Medium", value: "medium", description: "Balanced thinking" },
+      { label: "High", value: "high", description: "Deeper thinking" },
+      { label: "X High", value: "xhigh", description: "Very deep thinking" },
+      { label: "Max", value: "max", description: "Maximum Anthropic effort" },
+    ],
   },
   google: {
     label: "Google",
@@ -196,6 +214,13 @@ const PROVIDERS: Record<
         value: "gemini-3.1-pro",
         description: "Advanced",
       },
+    ],
+    thinkingEffortOptions: [
+      { label: "Default", value: "default", description: "Provider default" },
+      { label: "Minimal", value: "minimal", description: "Smallest thinking" },
+      { label: "Low", value: "low", description: "Light thinking" },
+      { label: "Medium", value: "medium", description: "Balanced thinking" },
+      { label: "High", value: "high", description: "Deeper thinking" },
     ],
   },
 }
@@ -290,6 +315,45 @@ function parseProviderOptions(value: string) {
   }
 
   return parsed as Record<string, unknown>
+}
+
+function withThinkingEffort(
+  provider: ProviderId,
+  providerOptions: Record<string, unknown>,
+  thinkingEffort: string
+) {
+  if (thinkingEffort === "default") {
+    return providerOptions
+  }
+
+  if (provider === "openai") {
+    return {
+      ...providerOptions,
+      reasoningEffort: thinkingEffort,
+    }
+  }
+
+  if (provider === "anthropic") {
+    return {
+      ...providerOptions,
+      effort: thinkingEffort,
+    }
+  }
+
+  const thinkingConfig =
+    providerOptions.thinkingConfig &&
+    typeof providerOptions.thinkingConfig === "object" &&
+    !Array.isArray(providerOptions.thinkingConfig)
+      ? (providerOptions.thinkingConfig as Record<string, unknown>)
+      : {}
+
+  return {
+    ...providerOptions,
+    thinkingConfig: {
+      ...thinkingConfig,
+      thinkingLevel: thinkingEffort,
+    },
+  }
 }
 
 function normalizeStoredThread(thread: ChatThread): ChatThread {
@@ -571,8 +635,10 @@ export default function Home() {
         accessToken: accessToken.trim(),
         provider: settings.provider,
         model: settings.model,
-        providerOptions: parseProviderOptions(
-          settings.providerOptions[settings.provider]
+        providerOptions: withThinkingEffort(
+          settings.provider,
+          parseProviderOptions(settings.providerOptions[settings.provider]),
+          settings.thinkingEffort
         ),
       }),
     })
@@ -649,6 +715,7 @@ export default function Home() {
           ...thread.settings,
           provider,
           model: PROVIDERS[provider].defaultModel,
+          thinkingEffort: "default",
         },
       }))
     },
@@ -1556,6 +1623,7 @@ function SettingsDialog({
     onSettingsChange({
       provider,
       model: PROVIDERS[provider].defaultModel,
+      thinkingEffort: "default",
     })
   }
 
@@ -1642,6 +1710,33 @@ function SettingsDialog({
                   </Select>
                   <FieldDescription>
                     Current model ID: {settings.model}
+                  </FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel>Thinking Effort</FieldLabel>
+                  <Select
+                    value={settings.thinkingEffort}
+                    onValueChange={(thinkingEffort) =>
+                      onSettingsChange({ thinkingEffort })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {PROVIDERS[settings.provider].thinkingEffortOptions.map(
+                          (option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label} · {option.description}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    Sent as the selected provider&apos;s thinking configuration.
                   </FieldDescription>
                 </Field>
                 <Field>
