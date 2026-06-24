@@ -1,5 +1,6 @@
 import {
   convertToModelMessages,
+  stepCountIs,
   streamText,
   type UIMessage,
 } from "ai"
@@ -10,6 +11,7 @@ import {
   jsonError,
   verifyAccessToken,
 } from "@/app/api/chat/session-store"
+import { createAgentTools } from "@/app/api/chat/tools"
 
 type ChatRequestBody = {
   accessToken?: string
@@ -18,7 +20,7 @@ type ChatRequestBody = {
 }
 
 const SYSTEM_PROMPT =
-  "You are a helpful assistant. Answer clearly, accurately, and concisely."
+  "You are a helpful assistant. Answer clearly, accurately, and concisely. You can use tools when they are useful. Use web_search for current or source-backed web information when available. Use read_image to view an image URL whenever the user asks about an image or visual details, or when inspecting the image would materially improve the answer."
 
 export const maxDuration = 60
 export const runtime = "nodejs"
@@ -57,6 +59,8 @@ export async function POST(request: Request) {
       temperature: session.temperature,
       maxOutputTokens: session.maxOutputTokens,
       providerOptions: session.providerOptions,
+      tools: createAgentTools(),
+      stopWhen: stepCountIs(5),
     })
 
     return result.toUIMessageStreamResponse()
