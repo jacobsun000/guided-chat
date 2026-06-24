@@ -81,8 +81,6 @@ export async function POST(request: Request) {
       model: createModel(session.provider, session.model),
       messages: await convertToModelMessages(body.messages),
       system: SYSTEM_PROMPT,
-      temperature: session.temperature,
-      maxOutputTokens: session.maxOutputTokens,
       providerOptions: session.providerOptions,
       tools: createAgentTools(),
       stopWhen: stepCountIs(5),

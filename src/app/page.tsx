@@ -571,8 +571,6 @@ export default function Home() {
         accessToken: accessToken.trim(),
         provider: settings.provider,
         model: settings.model,
-        temperature: settings.temperature,
-        maxOutputTokens: settings.maxOutputTokens,
         providerOptions: parseProviderOptions(
           settings.providerOptions[settings.provider]
         ),
@@ -1685,39 +1683,6 @@ function SettingsDialog({
                     System follows the current OS color scheme.
                   </FieldDescription>
                 </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field>
-                    <FieldLabel htmlFor="temperature">Temperature</FieldLabel>
-                    <Input
-                      id="temperature"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="2"
-                      value={settings.temperature}
-                      onChange={(event) =>
-                        onSettingsChange({
-                          temperature: Number(event.target.value),
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="max-output">Max Output Tokens</FieldLabel>
-                    <Input
-                      id="max-output"
-                      type="number"
-                      step="1"
-                      min="1"
-                      value={settings.maxOutputTokens}
-                      onChange={(event) =>
-                        onSettingsChange({
-                          maxOutputTokens: Number(event.target.value),
-                        })
-                      }
-                    />
-                  </Field>
-                </div>
               </FieldGroup>
             </TabsContent>
             <TabsContent value="advanced">

@@ -10,8 +10,6 @@ type ChatSessionRequestBody = {
   accessToken?: string
   provider?: unknown
   model?: unknown
-  temperature?: unknown
-  maxOutputTokens?: unknown
   providerOptions?: Record<string, unknown>
 }
 
@@ -43,21 +41,9 @@ export async function POST(request: Request) {
     return jsonError("Missing model id.")
   }
 
-  const temperature =
-    typeof body.temperature === "number" && Number.isFinite(body.temperature)
-      ? body.temperature
-      : undefined
-  const maxOutputTokens =
-    typeof body.maxOutputTokens === "number" &&
-      Number.isFinite(body.maxOutputTokens)
-      ? Math.max(1, Math.floor(body.maxOutputTokens))
-      : undefined
-
   const sessionId = createChatSession({
     provider: body.provider,
     model: modelId,
-    temperature,
-    maxOutputTokens,
     providerOptions: normalizeProviderOptions(body.provider, body.providerOptions),
   })
 

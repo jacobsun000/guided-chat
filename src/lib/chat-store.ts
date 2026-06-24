@@ -7,8 +7,6 @@ export type ProviderOptionsJson = Record<ProviderId, string>
 export type ChatSettings = {
   provider: ProviderId
   model: string
-  temperature: number
-  maxOutputTokens: number
   providerOptions: ProviderOptionsJson
 }
 
@@ -37,8 +35,6 @@ export function createDefaultSettings(): ChatSettings {
   return {
     provider: "openai",
     model: "gpt-5.5",
-    temperature: 0.7,
-    maxOutputTokens: 131072,
     providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
   }
 }

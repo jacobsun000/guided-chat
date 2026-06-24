@@ -10,8 +10,6 @@ import type { ProviderId } from "@/lib/chat-store"
 export type ChatSessionConfig = {
   provider: ProviderId
   model: string
-  temperature?: number
-  maxOutputTokens?: number
   providerOptions?: ProviderMetadata
 }
 
