@@ -16,11 +16,13 @@ type ChatRequestBody = {
   provider?: ProviderId
   model?: string
   apiKey?: string
-  system?: string
   temperature?: number
   maxOutputTokens?: number
   providerOptions?: Record<string, unknown>
 }
+
+const SYSTEM_PROMPT =
+  "You are a helpful assistant. Answer clearly, accurately, and concisely."
 
 const PROVIDER_OPTION_KEYS: Record<ProviderId, string> = {
   openai: "openai",
@@ -109,7 +111,7 @@ export async function POST(request: Request) {
     const result = streamText({
       model: createModel(body.provider, modelId, apiKey),
       messages: await convertToModelMessages(body.messages),
-      system: body.system?.trim() || undefined,
+      system: SYSTEM_PROMPT,
       temperature,
       maxOutputTokens,
       providerOptions: normalizeProviderOptions(

@@ -110,7 +110,6 @@ type ProviderOptionsJson = Record<ProviderId, string>
 type ChatSettings = {
   provider: ProviderId
   model: string
-  system: string
   temperature: number
   maxOutputTokens: number
   providerOptions: ProviderOptionsJson
@@ -230,7 +229,6 @@ function createDefaultSettings(): ChatSettings {
   return {
     provider: "openai",
     model: PROVIDERS.openai.defaultModel,
-    system: "",
     temperature: 0.7,
     maxOutputTokens: 1024,
     providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
@@ -321,12 +319,17 @@ function parseProviderOptions(value: string) {
 }
 
 function normalizeStoredThread(thread: ChatThread): ChatThread {
+  const storedSettings: Partial<ChatSettings> & { system?: string } = {
+    ...thread.settings,
+  }
+  delete storedSettings.system
+
   const settings = {
     ...createDefaultSettings(),
-    ...thread.settings,
+    ...storedSettings,
     providerOptions: {
       ...DEFAULT_PROVIDER_OPTIONS,
-      ...thread.settings?.providerOptions,
+      ...storedSettings.providerOptions,
     },
   }
 
@@ -539,7 +542,6 @@ export default function Home() {
       provider: settings.provider,
       model: settings.model,
       apiKey: keys[settings.provider]?.trim(),
-      system: settings.system,
       temperature: settings.temperature,
       maxOutputTokens: settings.maxOutputTokens,
       providerOptions: parseProviderOptions(
@@ -1301,17 +1303,6 @@ function SettingsDialog({
                   <FieldDescription>
                     System follows the current OS color scheme.
                   </FieldDescription>
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="system-prompt">System Prompt</FieldLabel>
-                  <Textarea
-                    id="system-prompt"
-                    value={settings.system}
-                    onChange={(event) =>
-                      onSettingsChange({ system: event.target.value })
-                    }
-                    rows={5}
-                  />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field>
