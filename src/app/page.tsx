@@ -356,6 +356,30 @@ function withThinkingEffort(
   }
 }
 
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  const textarea = document.createElement("textarea")
+  textarea.value = text
+  textarea.setAttribute("readonly", "")
+  textarea.style.position = "fixed"
+  textarea.style.top = "0"
+  textarea.style.left = "-9999px"
+  document.body.append(textarea)
+  textarea.select()
+
+  try {
+    if (!document.execCommand("copy")) {
+      throw new Error("Copy command was rejected.")
+    }
+  } finally {
+    textarea.remove()
+  }
+}
+
 function normalizeStoredThread(thread: ChatThread): ChatThread {
   const storedSettings: Partial<ChatSettings> & { system?: string } = {
     ...thread.settings,
@@ -917,8 +941,13 @@ export default function Home() {
       return
     }
 
-    await navigator.clipboard.writeText(text)
-    toast.success("Message copied")
+    try {
+      await copyTextToClipboard(text)
+      toast.success("Message copied")
+    } catch (err) {
+      console.error(err)
+      toast.error("Unable to copy message")
+    }
   }, [])
 
   if (!activeThread) {
