@@ -113,9 +113,7 @@ import {
 } from "@/lib/chat-store"
 import { cn } from "@/lib/utils"
 
-type StoredKeys = Partial<Record<ProviderId, string>>
-
-const KEYS_STORAGE_KEY = "guided-chat.keys.v1"
+const ACCESS_TOKEN_STORAGE_KEY = "guided-chat.access-token.v1"
 const THREADS_STORAGE_KEY = "guided-chat.threads.v1"
 
 const PROVIDERS: Record<
@@ -123,14 +121,12 @@ const PROVIDERS: Record<
   {
     label: string
     defaultModel: string
-    keyLabel: string
     models: { label: string; value: string; description: string }[]
   }
 > = {
   openai: {
     label: "OpenAI",
     defaultModel: "gpt-5.5",
-    keyLabel: "OpenAI API key",
     models: [
       {
         label: "GPT-5.5",
@@ -152,7 +148,6 @@ const PROVIDERS: Record<
   anthropic: {
     label: "Anthropic",
     defaultModel: "claude-sonnet-4-6",
-    keyLabel: "Anthropic API key",
     models: [
       {
         label: "Claude Haiku 4.5",
@@ -174,7 +169,6 @@ const PROVIDERS: Record<
   google: {
     label: "Google",
     defaultModel: "gemini-3.5-flash",
-    keyLabel: "Google API key",
     models: [
       {
         label: "Gemini 3.1 Flash-Lite",
@@ -322,31 +316,15 @@ function loadLocalThreadsStore(): ThreadsStore {
   }
 }
 
-function loadKeys(): StoredKeys {
-  const raw = localStorage.getItem(KEYS_STORAGE_KEY)
-
-  if (!raw) {
-    return {}
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as StoredKeys
-
-    return {
-      openai: parsed.openai ?? "",
-      anthropic: parsed.anthropic ?? "",
-      google: parsed.google ?? "",
-    }
-  } catch {
-    return {}
-  }
+function loadAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) ?? ""
 }
 
 export default function Home() {
   const { theme, setTheme } = useTheme()
   const initialStore = React.useMemo(() => createHydrationStore(), [])
   const [store, setStore] = React.useState<ThreadsStore>(initialStore)
-  const [keys, setKeys] = React.useState<StoredKeys>({})
+  const [accessToken, setAccessToken] = React.useState("")
   const [input, setInput] = React.useState("")
   const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null)
   const [loaded, setLoaded] = React.useState(false)
@@ -423,7 +401,7 @@ export default function Home() {
   const isStreaming = status === "submitted" || status === "streaming"
   const selectedProvider = activeThread?.settings.provider ?? "openai"
   const selectedProviderMeta = PROVIDERS[selectedProvider]
-  const hasSelectedKey = Boolean(keys[selectedProvider]?.trim())
+  const hasAccessToken = Boolean(accessToken.trim())
   const selectedModelMeta = selectedProviderMeta.models.find(
     (model) => model.value === activeThread?.settings.model
   )
@@ -444,7 +422,7 @@ export default function Home() {
     let cancelled = false
 
     async function loadInitialState() {
-      setKeys(loadKeys())
+      setAccessToken(loadAccessToken())
 
       try {
         const nextStore = await loadRemoteThreadsStore()
@@ -478,8 +456,8 @@ export default function Home() {
       return
     }
 
-    localStorage.setItem(KEYS_STORAGE_KEY, JSON.stringify(keys))
-  }, [keys, loaded])
+    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken)
+  }, [accessToken, loaded])
 
   React.useEffect(() => {
     if (!loaded) {
@@ -527,20 +505,44 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeThreadId, clearError, setMessages])
 
-  const createRequestBody = React.useCallback(() => {
+  const createChatSession = React.useCallback(async () => {
     const settings = activeThread.settings
+    const response = await fetch("/api/chat/sessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        accessToken: accessToken.trim(),
+        provider: settings.provider,
+        model: settings.model,
+        temperature: settings.temperature,
+        maxOutputTokens: settings.maxOutputTokens,
+        providerOptions: parseProviderOptions(
+          settings.providerOptions[settings.provider]
+        ),
+      }),
+    })
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string
+      } | null
+
+      throw new Error(payload?.error ?? "Unable to create chat session.")
+    }
+
+    const payload = (await response.json()) as { sessionId?: string }
+
+    if (!payload.sessionId) {
+      throw new Error("Chat session response did not include a session id.")
+    }
 
     return {
-      provider: settings.provider,
-      model: settings.model,
-      apiKey: keys[settings.provider]?.trim(),
-      temperature: settings.temperature,
-      maxOutputTokens: settings.maxOutputTokens,
-      providerOptions: parseProviderOptions(
-        settings.providerOptions[settings.provider]
-      ),
+      accessToken: accessToken.trim(),
+      sessionId: payload.sessionId,
     }
-  }, [activeThread, keys])
+  }, [accessToken, activeThread])
 
   const updateActiveThread = React.useCallback(
     (updater: (thread: ChatThread) => ChatThread) => {
@@ -686,40 +688,38 @@ export default function Home() {
         return
       }
 
-      if (!hasSelectedKey) {
-        setComposerError(`Add a ${selectedProviderMeta.keyLabel} before sending.`)
+      if (!hasAccessToken) {
+        setComposerError("Enter the workspace access token before sending.")
         setSettingsOpen(true)
         return
       }
 
       try {
-        parseProviderOptions(
-          activeThread.settings.providerOptions[activeThread.settings.provider]
+        const requestBody = await createChatSession()
+        setInput("")
+        await sendMessage(
+          { text },
+          {
+            body: requestBody,
+          }
         )
       } catch (err) {
-        setProviderOptionsError(
-          err instanceof Error ? err.message : "Provider options JSON is invalid."
-        )
-        setSettingsOpen(true)
+        const message =
+          err instanceof Error ? err.message : "Unable to send the message."
+        setComposerError(message)
+        if (message.includes("Provider options")) {
+          setProviderOptionsError(message)
+          setSettingsOpen(true)
+        }
         return
       }
-
-      setInput("")
-      await sendMessage(
-        { text },
-        {
-          body: createRequestBody(),
-        }
-      )
     },
     [
-      activeThread,
       clearError,
-      createRequestBody,
-      hasSelectedKey,
+      createChatSession,
+      hasAccessToken,
       input,
       isStreaming,
-      selectedProviderMeta.keyLabel,
       sendMessage,
     ]
   )
@@ -728,31 +728,31 @@ export default function Home() {
     clearError()
     setComposerError(null)
 
-    if (!hasSelectedKey) {
-      setComposerError(`Add a ${selectedProviderMeta.keyLabel} before regenerating.`)
+    if (!hasAccessToken) {
+      setComposerError("Enter the workspace access token before regenerating.")
       setSettingsOpen(true)
       return
     }
 
     try {
-      parseProviderOptions(
-        activeThread.settings.providerOptions[activeThread.settings.provider]
-      )
+      const requestBody = await createChatSession()
       await regenerate({
-        body: createRequestBody(),
+        body: requestBody,
       })
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unable to regenerate the response."
       setComposerError(message)
+      if (message.includes("Provider options")) {
+        setProviderOptionsError(message)
+        setSettingsOpen(true)
+      }
     }
   }, [
-    activeThread,
     clearError,
-    createRequestBody,
-    hasSelectedKey,
+    createChatSession,
+    hasAccessToken,
     regenerate,
-    selectedProviderMeta.keyLabel,
   ])
 
   const copyMessage = React.useCallback(async (message: UIMessage) => {
@@ -919,8 +919,8 @@ export default function Home() {
                     </EmptyMedia>
                     <EmptyTitle>Start a conversation</EmptyTitle>
                     <EmptyDescription>
-                      Messages are saved to the shared workspace. Provider keys
-                      are sent only with the selected request.
+                      Messages are saved to the shared workspace. Provider API
+                      keys are configured on the backend.
                     </EmptyDescription>
                   </EmptyHeader>
                   <EmptyContent>
@@ -951,16 +951,18 @@ export default function Home() {
 
           <div className="border-t bg-background px-3 py-3">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
-              {(composerError || error || !hasSelectedKey) && (
+              {(composerError || error || !hasAccessToken) && (
                 <Alert variant={composerError || error ? "destructive" : "default"}>
                   <AlertCircleIcon />
                   <AlertTitle>
-                    {composerError || error ? "Chat request blocked" : "Missing API key"}
+                    {composerError || error
+                      ? "Chat request blocked"
+                      : "Missing access token"}
                   </AlertTitle>
                   <AlertDescription>
                     {composerError ??
                       error?.message ??
-                      `Add a ${selectedProviderMeta.keyLabel} in settings before sending.`}
+                      "Enter the workspace access token in settings before sending."}
                   </AlertDescription>
                 </Alert>
               )}
@@ -1038,11 +1040,11 @@ export default function Home() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         thread={activeThread}
-        keys={keys}
+        accessToken={accessToken}
         theme={theme}
         providerOptionsError={providerOptionsError}
         setProviderOptionsError={setProviderOptionsError}
-        onKeysChange={setKeys}
+        onAccessTokenChange={setAccessToken}
         onThemeChange={setTheme}
         onSettingsChange={updateActiveSettings}
         onProviderOptionsChange={updateProviderOptionText}
@@ -1188,11 +1190,11 @@ function SettingsDialog({
   open,
   onOpenChange,
   thread,
-  keys,
+  accessToken,
   theme,
   providerOptionsError,
   setProviderOptionsError,
-  onKeysChange,
+  onAccessTokenChange,
   onThemeChange,
   onSettingsChange,
   onProviderOptionsChange,
@@ -1200,19 +1202,17 @@ function SettingsDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   thread: ChatThread
-  keys: StoredKeys
+  accessToken: string
   theme: Theme
   providerOptionsError: string | null
   setProviderOptionsError: (error: string | null) => void
-  onKeysChange: React.Dispatch<React.SetStateAction<StoredKeys>>
+  onAccessTokenChange: (value: string) => void
   onThemeChange: (theme: Theme) => void
   onSettingsChange: (patch: Partial<ChatSettings>) => void
   onProviderOptionsChange: (provider: ProviderId, value: string) => void
 }) {
   const settings = thread.settings
-  const [activeTab, setActiveTab] = React.useState<"model" | "keys" | "advanced">(
-    "model"
-  )
+  const [activeTab, setActiveTab] = React.useState<"model" | "advanced">("model")
   const visibleTab = providerOptionsError ? "advanced" : activeTab
 
   const setProvider = (provider: ProviderId) => {
@@ -1245,7 +1245,7 @@ function SettingsDialog({
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
-            Configure the selected provider, model, and local API keys.
+            Configure the selected provider, model, and workspace access.
           </DialogDescription>
         </DialogHeader>
         <Tabs
@@ -1254,7 +1254,6 @@ function SettingsDialog({
         >
           <TabsList>
             <TabsTrigger value="model">Model</TabsTrigger>
-            <TabsTrigger value="keys">Keys</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
           <ScrollArea className="max-h-[60svh] pr-3">
@@ -1306,6 +1305,19 @@ function SettingsDialog({
                   </Select>
                   <FieldDescription>
                     Current model ID: {settings.model}
+                  </FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="access-token">Access Token</FieldLabel>
+                  <Input
+                    id="access-token"
+                    type="password"
+                    value={accessToken}
+                    onChange={(event) => onAccessTokenChange(event.target.value)}
+                    autoComplete="off"
+                  />
+                  <FieldDescription>
+                    Required for session creation and every streamed request.
                   </FieldDescription>
                 </Field>
                 <Field>
@@ -1367,32 +1379,6 @@ function SettingsDialog({
                     />
                   </Field>
                 </div>
-              </FieldGroup>
-            </TabsContent>
-            <TabsContent value="keys">
-              <FieldGroup>
-                {(Object.keys(PROVIDERS) as ProviderId[]).map((provider) => (
-                  <Field key={provider}>
-                    <FieldLabel htmlFor={`${provider}-key`}>
-                      {PROVIDERS[provider].keyLabel}
-                    </FieldLabel>
-                    <Input
-                      id={`${provider}-key`}
-                      type="password"
-                      value={keys[provider] ?? ""}
-                      onChange={(event) =>
-                        onKeysChange((current) => ({
-                          ...current,
-                          [provider]: event.target.value,
-                        }))
-                      }
-                      autoComplete="off"
-                    />
-                    <FieldDescription>
-                      Stored in this browser localStorage.
-                    </FieldDescription>
-                  </Field>
-                ))}
               </FieldGroup>
             </TabsContent>
             <TabsContent value="advanced">
