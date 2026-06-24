@@ -6,6 +6,7 @@ import { useTheme } from "@/components/theme-provider"
 
 const FRAME_WIDTH = 960
 const FRAME_HEIGHT = 540
+const MIN_FRAME_HEIGHT = 1
 
 type TailwindResponse = {
   css: string
@@ -47,7 +48,6 @@ function buildSrcDoc(
     html,
     body {
       width: ${FRAME_WIDTH}px;
-      min-height: ${FRAME_HEIGHT}px;
       margin: 0;
       background: transparent;
     }
@@ -114,12 +114,14 @@ function buildSrcDoc(
       window.__htmlBlockShowError = showError;
 
       const postHeight = () => {
+        const bodyRect = document.body
+          ? document.body.getBoundingClientRect()
+          : { height: 0 };
         const height = Math.max(
-          ${FRAME_HEIGHT},
-          document.documentElement.scrollHeight,
+          1,
           document.body ? document.body.scrollHeight : 0,
-          document.documentElement.offsetHeight,
-          document.body ? document.body.offsetHeight : 0
+          document.body ? document.body.offsetHeight : 0,
+          bodyRect.height
         );
 
         window.parent.postMessage(
@@ -216,6 +218,7 @@ export function HtmlOutputBlock({ source }: { source: string }) {
   const { resolvedTheme } = useTheme()
   const blockId = React.useId()
   const [width, setWidth] = React.useState(FRAME_WIDTH)
+  const [availableHeight, setAvailableHeight] = React.useState(FRAME_HEIGHT)
   const [contentHeightState, setContentHeightState] =
     React.useState<ContentHeightState>({
       source: "",
@@ -243,6 +246,28 @@ export function HtmlOutputBlock({ source }: { source: string }) {
     updateWidth()
     const observer = new ResizeObserver(updateWidth)
     observer.observe(target)
+
+    return () => observer.disconnect()
+  }, [])
+
+  React.useEffect(() => {
+    const target = containerRef.current
+
+    if (!target) {
+      return
+    }
+
+    const scrollViewport = target.closest(
+      '[data-slot="scroll-area-viewport"]'
+    ) as HTMLElement | null
+    const observedTarget = scrollViewport ?? target
+    const updateAvailableHeight = () => {
+      setAvailableHeight(Math.max(MIN_FRAME_HEIGHT, observedTarget.clientHeight))
+    }
+
+    updateAvailableHeight()
+    const observer = new ResizeObserver(updateAvailableHeight)
+    observer.observe(observedTarget)
 
     return () => observer.disconnect()
   }, [])
@@ -299,7 +324,7 @@ export function HtmlOutputBlock({ source }: { source: string }) {
 
       setContentHeightState({
         source,
-        height: Math.max(FRAME_HEIGHT, Math.ceil(event.data.height)),
+        height: Math.max(1, Math.ceil(event.data.height)),
       })
     }
 
@@ -313,7 +338,11 @@ export function HtmlOutputBlock({ source }: { source: string }) {
     contentHeightState.source === source
       ? contentHeightState.height
       : FRAME_HEIGHT
-  const height = contentHeight * scale
+  const scaledContentHeight = contentHeight * scale
+  const height = Math.max(
+    MIN_FRAME_HEIGHT,
+    Math.min(scaledContentHeight, availableHeight)
+  )
   const css =
     tailwindState.source === source && tailwindState.error === null
       ? tailwindState.css
@@ -353,18 +382,23 @@ export function HtmlOutputBlock({ source }: { source: string }) {
         </div>
       ) : (
         <div className="html-output-frame" style={{ height }}>
-          <iframe
-            ref={iframeRef}
-            title="HTML output preview"
-            sandbox="allow-scripts"
-            referrerPolicy="no-referrer"
-            srcDoc={srcDoc}
-            style={{
-              width: FRAME_WIDTH,
-              height: contentHeight,
-              transform: `scale(${scale})`,
-            }}
-          />
+          <div
+            className="html-output-frame-scaler"
+            style={{ width, height: scaledContentHeight }}
+          >
+            <iframe
+              ref={iframeRef}
+              title="HTML output preview"
+              sandbox="allow-scripts"
+              referrerPolicy="no-referrer"
+              srcDoc={srcDoc}
+              style={{
+                width: FRAME_WIDTH,
+                height: contentHeight,
+                transform: `scale(${scale})`,
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

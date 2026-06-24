@@ -865,7 +865,7 @@ export default function Home() {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
       <Sidebar collapsible="offcanvas">
         <SidebarHeader>
           <div className="flex items-center justify-between gap-2">
@@ -944,7 +944,7 @@ export default function Home() {
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
-      <SidebarInset className="min-h-svh">
+      <SidebarInset className="h-svh min-h-0 overflow-hidden">
         <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-3">
           <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger>
@@ -998,8 +998,8 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col">
-          <ScrollArea className="min-h-0 flex-1">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ScrollArea className="min-h-0 flex-1 overflow-hidden">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6">
               {!messages.length && (
                 <Empty className="min-h-[55svh] border">
