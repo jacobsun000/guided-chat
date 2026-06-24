@@ -4,6 +4,8 @@ import * as React from "react"
 import type { UIMessage } from "ai"
 import { DefaultChatTransport } from "ai"
 import { useChat } from "@ai-sdk/react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import {
   AlertCircleIcon,
   BotIcon,
@@ -1125,13 +1127,15 @@ function MessageBubble({
       >
         <div
           className={cn(
-            "whitespace-pre-wrap text-sm leading-6",
+            "text-sm leading-6",
             isUser
               ? "border bg-primary px-2.5 py-1.5 text-primary-foreground"
               : "text-foreground"
           )}
         >
-          {text || (
+          {text ? (
+            <MarkdownContent text={text} isUser={isUser} />
+          ) : (
             <span className="inline-flex items-center gap-2 text-muted-foreground">
               <Spinner />
               Streaming
@@ -1151,6 +1155,42 @@ function MessageBubble({
         </div>
       </div>
     </article>
+  )
+}
+
+function MarkdownContent({
+  text,
+  isUser,
+}: {
+  text: string
+  isUser: boolean
+}) {
+  return (
+    <div className={cn("markdown-message", isUser && "markdown-message-user")}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: (props) => {
+            const { node, ...anchorProps } = props
+            void node
+
+            return <a {...anchorProps} target="_blank" rel="noreferrer" />
+          },
+          table: (props) => {
+            const { node, ...tableProps } = props
+            void node
+
+            return (
+              <div className="markdown-table-wrapper">
+                <table {...tableProps} />
+              </div>
+            )
+          },
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
   )
 }
 
