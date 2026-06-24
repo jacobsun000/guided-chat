@@ -18,6 +18,17 @@ type TailwindState = {
   error: string | null
 }
 
+type ContentHeightState = {
+  source: string
+  height: number
+}
+
+type HtmlBlockHeightMessage = {
+  type: "html-output-height"
+  blockId: string
+  height: number
+}
+
 function escapeStyleContent(value: string) {
   return value.replace(/<\/style/gi, "<\\/style")
 }
@@ -26,14 +37,18 @@ function escapeScriptContent(value: string) {
   return value.replace(/<\/script/gi, "<\\/script")
 }
 
-function buildSrcDoc(source: string, css: string, isDark: boolean) {
+function buildSrcDoc(
+  source: string,
+  css: string,
+  isDark: boolean,
+  blockId: string
+) {
   const frameCss = `
     html,
     body {
       width: ${FRAME_WIDTH}px;
       min-height: ${FRAME_HEIGHT}px;
       margin: 0;
-      overflow: hidden;
       background: transparent;
     }
 
@@ -97,6 +112,45 @@ function buildSrcDoc(source: string, css: string, isDark: boolean) {
       };
 
       window.__htmlBlockShowError = showError;
+
+      const postHeight = () => {
+        const height = Math.max(
+          ${FRAME_HEIGHT},
+          document.documentElement.scrollHeight,
+          document.body ? document.body.scrollHeight : 0,
+          document.documentElement.offsetHeight,
+          document.body ? document.body.offsetHeight : 0
+        );
+
+        window.parent.postMessage(
+          {
+            type: "html-output-height",
+            blockId: ${JSON.stringify(blockId)},
+            height,
+          },
+          "*"
+        );
+      };
+
+      const scheduleHeightPost = () => {
+        requestAnimationFrame(() => {
+          postHeight();
+          requestAnimationFrame(postHeight);
+        });
+      };
+
+      window.addEventListener("load", scheduleHeightPost);
+      document.addEventListener("DOMContentLoaded", scheduleHeightPost);
+
+      const observer = new ResizeObserver(scheduleHeightPost);
+      observer.observe(document.documentElement);
+      document.addEventListener("DOMContentLoaded", () => {
+        if (document.body) {
+          observer.observe(document.body);
+        }
+      });
+
+      scheduleHeightPost();
     })();
   `
 
@@ -160,13 +214,20 @@ function buildSrcDoc(source: string, css: string, isDark: boolean) {
 
 export function HtmlOutputBlock({ source }: { source: string }) {
   const { resolvedTheme } = useTheme()
+  const blockId = React.useId()
   const [width, setWidth] = React.useState(FRAME_WIDTH)
+  const [contentHeightState, setContentHeightState] =
+    React.useState<ContentHeightState>({
+      source: "",
+      height: FRAME_HEIGHT,
+    })
   const [tailwindState, setTailwindState] = React.useState<TailwindState>({
     source: "",
     css: null,
     error: null,
   })
   const containerRef = React.useRef<HTMLDivElement | null>(null)
+  const iframeRef = React.useRef<HTMLIFrameElement | null>(null)
 
   React.useEffect(() => {
     const target = containerRef.current
@@ -222,8 +283,37 @@ export function HtmlOutputBlock({ source }: { source: string }) {
     return () => controller.abort()
   }, [source])
 
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent<HtmlBlockHeightMessage>) => {
+      if (event.source !== iframeRef.current?.contentWindow) {
+        return
+      }
+
+      if (
+        event.data?.type !== "html-output-height" ||
+        event.data.blockId !== blockId ||
+        typeof event.data.height !== "number"
+      ) {
+        return
+      }
+
+      setContentHeightState({
+        source,
+        height: Math.max(FRAME_HEIGHT, Math.ceil(event.data.height)),
+      })
+    }
+
+    window.addEventListener("message", handleMessage)
+
+    return () => window.removeEventListener("message", handleMessage)
+  }, [blockId, source])
+
   const scale = width / FRAME_WIDTH
-  const height = FRAME_HEIGHT * scale
+  const contentHeight =
+    contentHeightState.source === source
+      ? contentHeightState.height
+      : FRAME_HEIGHT
+  const height = contentHeight * scale
   const css =
     tailwindState.source === source && tailwindState.error === null
       ? tailwindState.css
@@ -232,8 +322,10 @@ export function HtmlOutputBlock({ source }: { source: string }) {
     tailwindState.source === source ? tailwindState.error : null
   const srcDoc = React.useMemo(
     () =>
-      css === null ? "" : buildSrcDoc(source, css, resolvedTheme === "dark"),
-    [css, resolvedTheme, source]
+      css === null
+        ? ""
+        : buildSrcDoc(source, css, resolvedTheme === "dark", blockId),
+    [blockId, css, resolvedTheme, source]
   )
 
   return (
@@ -243,17 +335,33 @@ export function HtmlOutputBlock({ source }: { source: string }) {
           {error}
         </div>
       ) : css === null ? (
-        <div className="html-output-loading">Rendering HTML preview</div>
+        <div className="html-output-loading" role="status" aria-live="polite">
+          <div className="html-output-loading-preview" aria-hidden="true">
+            <div className="html-output-loading-toolbar">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="html-output-loading-grid">
+              <div className="html-output-loading-panel html-output-loading-panel-lg" />
+              <div className="html-output-loading-panel" />
+              <div className="html-output-loading-panel" />
+            </div>
+            <div className="html-output-loading-progress" />
+          </div>
+          <span>Rendering HTML preview</span>
+        </div>
       ) : (
         <div className="html-output-frame" style={{ height }}>
           <iframe
+            ref={iframeRef}
             title="HTML output preview"
             sandbox="allow-scripts"
             referrerPolicy="no-referrer"
             srcDoc={srcDoc}
             style={{
               width: FRAME_WIDTH,
-              height: FRAME_HEIGHT,
+              height: contentHeight,
               transform: `scale(${scale})`,
             }}
           />

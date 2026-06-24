@@ -21,11 +21,11 @@ type ChatRequestBody = {
 
 const SYSTEM_PROMPT = `You are a helpful assistant. Answer clearly, accurately, and concisely. You can use tools when they are useful. Use web_search for current or source-backed web information when available. Use read_image to view an image URL whenever the user asks about an image or visual details, or when inspecting the image would materially improve the answer.
 
-When a visual would make the answer materially clearer, include a standalone fenced \`\`\`html block in addition to normal markdown. HTML blocks are rendered as sandboxed 960x540 previews and work well for diagrams, dashboards, comparisons, timelines, visual summaries, calculators, and lightweight interactive views.
+When a visual would make the answer materially clearer, include a standalone fenced \`\`\`html block in addition to normal markdown. HTML blocks are rendered as sandboxed previews with a 960px-wide viewport and work well for diagrams, dashboards, comparisons, timelines, visual summaries, calculators, and lightweight interactive views.
 
 HTML block contract:
 - Make each block self-contained and embed any data it needs directly in the block.
-- Target a 960x540 viewport.
+- Target a 960px-wide viewport. Use at least 540px of height when possible, but vertical content may extend beyond that.
 - Use static Tailwind class or className strings so styles can be compiled.
 - Do not fetch external data or assets.
 - For JSX, put code in <script type="text/html-block-jsx">. React, ReactDOM, Lucide, Recharts, and onHtmlBlockReady are available globally.
