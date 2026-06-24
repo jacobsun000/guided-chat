@@ -23,7 +23,6 @@ import {
   RefreshCwIcon,
   SendIcon,
   SettingsIcon,
-  SquareIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react"
@@ -39,6 +38,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -1133,101 +1133,93 @@ export default function Home() {
             </div>
           </ScrollArea>
 
-          <div className="border-t bg-background px-3 py-3">
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
-              {(composerError || error || !hasAccessToken) && (
-                <Alert variant={composerError || error ? "destructive" : "default"}>
-                  <AlertCircleIcon />
-                  <AlertTitle>
-                    {composerError || error
-                      ? "Chat request blocked"
-                      : "Missing access token"}
-                  </AlertTitle>
-                  <AlertDescription>
-                    {composerError ??
-                      error?.message ??
-                      "Enter the workspace access token in settings before sending."}
-                  </AlertDescription>
-                </Alert>
-              )}
+          {!isStreaming && (
+            <div className="border-t bg-background px-3 py-3">
+              <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+                {(composerError || error || !hasAccessToken) && (
+                  <Alert variant={composerError || error ? "destructive" : "default"}>
+                    <AlertCircleIcon />
+                    <AlertTitle>
+                      {composerError || error
+                        ? "Chat request blocked"
+                        : "Missing access token"}
+                    </AlertTitle>
+                    <AlertDescription>
+                      {composerError ??
+                        error?.message ??
+                        "Enter the workspace access token in settings before sending."}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              {pendingQuestionPart && (
-                <AskUserQuestionsPanel
-                  key={pendingQuestionPart.toolCallId}
-                  part={pendingQuestionPart}
-                  disabled={isStreaming}
-                  onSubmit={submitQuestionAnswers}
-                />
-              )}
-
-              <form onSubmit={submit}>
-                <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
-                  <InputGroupTextarea
-                    ref={composerTextareaRef}
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault()
-                        event.currentTarget.form?.requestSubmit()
-                      }
-                    }}
-                    placeholder={
-                      hasPendingQuestion ? "Answer the questions above..." : "Message..."
-                    }
-                    rows={1}
-                    disabled={isStreaming || hasPendingQuestion}
-                    className="max-h-48 min-h-8 py-1.5"
+                {pendingQuestionPart && (
+                  <AskUserQuestionsPanel
+                    key={pendingQuestionPart.toolCallId}
+                    part={pendingQuestionPart}
+                    disabled={false}
+                    onSubmit={submitQuestionAnswers}
                   />
-                  <div className="flex shrink-0 items-center gap-1 pb-0.5">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <InputGroupButton
-                          size="icon-sm"
-                          onClick={regenerateLast}
-                          disabled={!messages.length || isStreaming || hasPendingQuestion}
-                        >
-                          <RefreshCwIcon />
-                          <span className="sr-only">Regenerate</span>
-                        </InputGroupButton>
-                      </TooltipTrigger>
-                      <TooltipContent>Regenerate</TooltipContent>
-                    </Tooltip>
-                    {isStreaming ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <InputGroupButton
-                            size="icon-sm"
-                            variant="outline"
-                            onClick={stop}
-                          >
-                            <SquareIcon />
-                            <span className="sr-only">Stop</span>
-                          </InputGroupButton>
-                        </TooltipTrigger>
-                        <TooltipContent>Stop</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <InputGroupButton
-                            type="submit"
-                            size="icon-sm"
-                            variant="default"
-                            disabled={!input.trim() || hasPendingQuestion}
-                          >
-                            <SendIcon />
-                            <span className="sr-only">Send</span>
-                          </InputGroupButton>
-                        </TooltipTrigger>
-                        <TooltipContent>Send</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                </InputGroup>
-              </form>
+                )}
+
+                {!pendingQuestionPart && (
+                  <form onSubmit={submit}>
+                    <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
+                      <InputGroupTextarea
+                        ref={composerTextareaRef}
+                        value={input}
+                        onChange={(event) => setInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault()
+                            event.currentTarget.form?.requestSubmit()
+                          }
+                        }}
+                        placeholder={
+                          hasPendingQuestion
+                            ? "Answer the questions above..."
+                            : "Message..."
+                        }
+                        rows={1}
+                        disabled={isStreaming || hasPendingQuestion}
+                        className="max-h-48 min-h-8 py-1.5"
+                      />
+                      <div className="flex shrink-0 items-center gap-1 pb-0.5">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InputGroupButton
+                              size="icon-sm"
+                              onClick={regenerateLast}
+                              disabled={
+                                !messages.length || isStreaming || hasPendingQuestion
+                              }
+                            >
+                              <RefreshCwIcon />
+                              <span className="sr-only">Regenerate</span>
+                            </InputGroupButton>
+                          </TooltipTrigger>
+                          <TooltipContent>Regenerate</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InputGroupButton
+                              type="submit"
+                              size="icon-sm"
+                              variant="default"
+                              disabled={!input.trim() || hasPendingQuestion}
+                            >
+                              <SendIcon />
+                              <span className="sr-only">Send</span>
+                            </InputGroupButton>
+                          </TooltipTrigger>
+                          <TooltipContent>Send</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </InputGroup>
+                  </form>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </SidebarInset>
 
@@ -1376,6 +1368,7 @@ function AskUserQuestionsPanel({
   onSubmit: (toolCallId: string, output: AskUserQuestionsOutput) => void
 }) {
   const input = part.input as AskUserQuestionsInput
+  const [open, setOpen] = React.useState(false)
   const [selectedAnswers, setSelectedAnswers] = React.useState<
     Record<string, string>
   >({})
@@ -1420,103 +1413,111 @@ function AskUserQuestionsPanel({
         }
       }),
     })
+    setOpen(false)
   }
 
   return (
-    <section className="border bg-card px-3 py-3 shadow-sm">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-sm font-medium">
-              {input.title ?? "Before I continue"}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div className="flex min-h-11 items-center justify-center">
+        <DialogTrigger asChild>
+          <Button className="max-w-full">
+            {input.title ?? "Before I continue"}
+          </Button>
+        </DialogTrigger>
+      </div>
+      <DialogContent className="max-h-[min(85svh,720px)] gap-0 p-0 sm:max-w-xl">
+        <DialogHeader className="border-b px-4 py-3">
+          <div className="flex items-start justify-between gap-3 pr-8">
+            <div className="min-w-0">
+              <DialogTitle>{input.title ?? "Before I continue"}</DialogTitle>
+              <DialogDescription>{input.purpose}</DialogDescription>
             </div>
-            <div className="text-xs leading-5 text-muted-foreground">
-              {input.purpose}
-            </div>
+            <Badge variant="secondary" className="shrink-0">Question</Badge>
           </div>
-          <Badge variant="secondary">Question</Badge>
-        </div>
+        </DialogHeader>
 
-        <FieldGroup>
-          {input.questions.map((question, questionIndex) => {
-            const selected = selectedAnswers[question.id]
-            const isOther = selected === OTHER_ANSWER_VALUE
+        <ScrollArea className="max-h-[calc(min(85svh,720px)-8.5rem)]">
+          <FieldGroup className="p-4">
+            {input.questions.map((question, questionIndex) => {
+              const selected = selectedAnswers[question.id]
+              const isOther = selected === OTHER_ANSWER_VALUE
 
-            return (
-              <Field key={question.id}>
-                <FieldLabel>
-                  <span className="text-xs text-muted-foreground">
-                    {question.header || `Question ${questionIndex + 1}`}
-                  </span>
-                  <span>{question.question}</span>
-                </FieldLabel>
-                <ToggleGroup
-                  type="single"
-                  value={selected}
-                  onValueChange={(value) => {
-                    if (!value) {
-                      return
-                    }
+              return (
+                <Field key={question.id}>
+                  <FieldLabel>
+                    <span className="text-xs text-muted-foreground">
+                      {question.header || `Question ${questionIndex + 1}`}
+                    </span>
+                    <span>{question.question}</span>
+                  </FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    value={selected}
+                    onValueChange={(value) => {
+                      if (!value) {
+                        return
+                      }
 
-                    setSelectedAnswers((current) => ({
-                      ...current,
-                      [question.id]: value,
-                    }))
-                  }}
-                  orientation="vertical"
-                  className="w-full items-stretch"
-                  disabled={disabled}
-                >
-                  {question.options.map((option) => (
+                      setSelectedAnswers((current) => ({
+                        ...current,
+                        [question.id]: value,
+                      }))
+                    }}
+                    orientation="vertical"
+                    className="w-full items-stretch"
+                    disabled={disabled}
+                  >
+                    {question.options.map((option) => (
+                      <ToggleGroupItem
+                        key={option.label}
+                        value={option.label}
+                        variant="outline"
+                        className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
+                      >
+                        <span className="flex flex-col items-start gap-0.5">
+                          <span>{option.label}</span>
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {option.description}
+                          </span>
+                        </span>
+                      </ToggleGroupItem>
+                    ))}
                     <ToggleGroupItem
-                      key={option.label}
-                      value={option.label}
+                      value={OTHER_ANSWER_VALUE}
                       variant="outline"
                       className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
                     >
-                      <span className="flex flex-col items-start gap-0.5">
-                        <span>{option.label}</span>
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {option.description}
-                        </span>
-                      </span>
+                      Other
                     </ToggleGroupItem>
-                  ))}
-                  <ToggleGroupItem
-                    value={OTHER_ANSWER_VALUE}
-                    variant="outline"
-                    className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
-                  >
-                    Other
-                  </ToggleGroupItem>
-                </ToggleGroup>
-                {isOther && (
-                  <Textarea
-                    value={customAnswers[question.id] ?? ""}
-                    onChange={(event) =>
-                      setCustomAnswers((current) => ({
-                        ...current,
-                        [question.id]: event.target.value,
-                      }))
-                    }
-                    placeholder="Type your answer..."
-                    rows={2}
-                    disabled={disabled}
-                  />
-                )}
-              </Field>
-            )
-          })}
-        </FieldGroup>
+                  </ToggleGroup>
+                  {isOther && (
+                    <Textarea
+                      value={customAnswers[question.id] ?? ""}
+                      onChange={(event) =>
+                        setCustomAnswers((current) => ({
+                          ...current,
+                          [question.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="Type your answer..."
+                      rows={2}
+                      disabled={disabled}
+                    />
+                  )}
+                </Field>
+              )
+            })}
+          </FieldGroup>
+        </ScrollArea>
 
-        <div className="flex justify-end">
+        <DialogFooter className="border-t px-4 py-3">
           <Button onClick={submitAnswers} disabled={!allAnswered || disabled}>
             <CheckIcon data-icon="inline-start" />
             Continue
           </Button>
-        </div>
-      </div>
-    </section>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
