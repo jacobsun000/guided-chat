@@ -243,6 +243,27 @@
     @apply block rounded-none border-0 bg-transparent p-0 text-[0.875rem] leading-6;
   }
 
+  .html-output-block {
+    @apply my-3 w-full max-w-[960px] overflow-hidden border bg-background;
+  }
+
+  .html-output-frame {
+    @apply relative w-full overflow-hidden bg-background;
+  }
+
+  .html-output-frame iframe {
+    @apply absolute left-0 top-0 block origin-top-left border-0 bg-transparent;
+  }
+
+  .html-output-loading,
+  .html-output-error {
+    @apply flex aspect-video w-full items-center justify-center px-4 py-6 text-sm text-muted-foreground;
+  }
+
+  .html-output-error {
+    @apply items-start justify-start overflow-auto border-destructive/30 bg-destructive/10 font-mono text-xs text-destructive;
+  }
+
   .markdown-message hr {
     @apply my-5 border-border;
   }

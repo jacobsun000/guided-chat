@@ -91,6 +91,7 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { HtmlOutputBlock } from "@/components/html-output-block"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -1157,6 +1158,32 @@ function MarkdownContent({
   text: string
   isUser: boolean
 }) {
+  const renderPre = React.useCallback(
+    (props: React.ComponentProps<"pre"> & { node?: unknown }) => {
+      const { node, children, ...preProps } = props
+      void node
+
+      const codeChild = React.Children.toArray(children)[0]
+
+      if (!isUser && React.isValidElement(codeChild)) {
+        const childProps = codeChild.props as {
+          className?: string
+          children?: React.ReactNode
+        }
+        const language = childProps.className?.match(/language-(\S+)/)?.[1]
+
+        if (language === "html") {
+          const source = React.Children.toArray(childProps.children).join("")
+
+          return <HtmlOutputBlock source={source} />
+        }
+      }
+
+      return <pre {...preProps}>{children}</pre>
+    },
+    [isUser]
+  )
+
   return (
     <div className={cn("markdown-message", isUser && "markdown-message-user")}>
       <ReactMarkdown
@@ -1178,6 +1205,7 @@ function MarkdownContent({
               </div>
             )
           },
+          pre: renderPre,
         }}
       >
         {text}
