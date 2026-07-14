@@ -9,6 +9,7 @@ import {
   Edit3Icon,
   MessageSquareIcon,
   MoreHorizontalIcon,
+  NotebookTabsIcon,
   PlusIcon,
   SettingsIcon,
   Trash2Icon,
@@ -173,6 +174,25 @@ export function AppSidebar({
                     )}
                   </SidebarMenuItem>
                 ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/tasks")}
+                  tooltip="Browse research tasks"
+                >
+                  <Link href="/tasks">
+                    <NotebookTabsIcon />
+                    <span>Tasks</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

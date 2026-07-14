@@ -14,11 +14,13 @@ import { Separator } from "@/components/ui/separator"
 
 type DatasetPageShellProps = {
   title: string
+  sectionLabel?: string
   children: React.ReactNode
 }
 
 export function DatasetPageShell({
   title,
+  sectionLabel = "Datasets",
   children,
 }: DatasetPageShellProps) {
   const [threads, setThreads] = React.useState<ThreadsStore["threads"]>([])
@@ -64,7 +66,7 @@ export function DatasetPageShell({
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-5" />
           <div className="flex min-w-0 flex-col justify-center">
-            <span className="text-[10px] text-muted-foreground">Datasets</span>
+            <span className="text-[10px] text-muted-foreground">{sectionLabel}</span>
             <h1 className="truncate text-sm font-medium">{title}</h1>
           </div>
         </header>
