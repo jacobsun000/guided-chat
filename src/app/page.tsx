@@ -15,18 +15,12 @@ import {
   BotIcon,
   CheckIcon,
   CopyIcon,
-  Edit3Icon,
   GitBranchIcon,
   KeyRoundIcon,
   Loader2Icon,
   MapIcon,
-  MoreHorizontalIcon,
-  PanelLeftIcon,
-  PlusIcon,
   RefreshCwIcon,
   SendIcon,
-  SettingsIcon,
-  Trash2Icon,
   XIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -43,13 +37,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Empty,
   EmptyContent,
@@ -81,25 +68,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { HtmlOutputBlock } from "@/components/html-output-block"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -537,6 +508,17 @@ function normalizeThreadsStore(store: ThreadsStore): ThreadsStore {
   }
 }
 
+function selectRequestedThread(store: ThreadsStore, threadId: string | null) {
+  if (!threadId || !store.threads.some((thread) => thread.id === threadId)) {
+    return store
+  }
+
+  return {
+    ...store,
+    activeThreadId: threadId,
+  }
+}
+
 async function loadRemoteThreadsStore(): Promise<ThreadsStore> {
   const response = await fetch("/api/threads", { cache: "no-store" })
 
@@ -676,19 +658,27 @@ export default function Home() {
     let cancelled = false
 
     async function loadInitialState() {
+      const requestedThreadId = new URLSearchParams(window.location.search).get(
+        "thread"
+      )
       setAccessToken(loadAccessToken())
 
       try {
         const nextStore = await loadRemoteThreadsStore()
 
         if (!cancelled) {
-          setStore(nextStore)
+          setStore(selectRequestedThread(nextStore, requestedThreadId))
         }
       } catch (err) {
         console.error(err)
 
         if (!cancelled) {
-          setStore(loadLocalThreadsStore())
+          setStore(
+            selectRequestedThread(
+              loadLocalThreadsStore(),
+              requestedThreadId
+            )
+          )
           toast.error("Using browser chat history because the database is unavailable.")
         }
       } finally {
@@ -1182,90 +1172,20 @@ export default function Home() {
 
   return (
     <SidebarProvider className="h-svh min-h-0 overflow-hidden">
-      <Sidebar collapsible="offcanvas">
-        <SidebarHeader>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2 px-2">
-              <BotIcon />
-              <div className="min-w-0">
-                <div className="truncate text-xs font-medium">Guided Chat</div>
-                <div className="truncate text-xs text-muted-foreground">
-                  Shared workspace
-                </div>
-              </div>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={createNewThread}>
-                  <PlusIcon />
-                  <span className="sr-only">New chat</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>New chat</TooltipContent>
-            </Tooltip>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Chats</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {!loaded &&
-                  Array.from({ length: 4 }).map((_, index) => (
-                    <SidebarMenuItem key={index}>
-                      <Skeleton className="h-8 w-full" />
-                    </SidebarMenuItem>
-                  ))}
-                {loaded &&
-                  store.threads.map((thread) => (
-                    <SidebarMenuItem key={thread.id}>
-                      <SidebarMenuButton
-                        isActive={thread.id === activeThread.id}
-                        onClick={() => switchThread(thread.id)}
-                        tooltip={thread.title}
-                      >
-                        <span>{thread.title}</span>
-                      </SidebarMenuButton>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <SidebarMenuAction showOnHover>
-                            <MoreHorizontalIcon />
-                            <span className="sr-only">Chat actions</span>
-                          </SidebarMenuAction>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuGroup>
-                            <DropdownMenuItem onClick={() => openRename(thread)}>
-                              <Edit3Icon data-icon="inline-start" />
-                              Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => deleteThread(thread.id)}>
-                              <Trash2Icon data-icon="inline-start" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </SidebarMenuItem>
-                  ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter>
-          <Button variant="outline" onClick={() => setSettingsOpen(true)}>
-            <SettingsIcon data-icon="inline-start" />
-            Settings
-          </Button>
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
+      <AppSidebar
+        threads={store.threads}
+        activeThreadId={activeThread.id}
+        loaded={loaded}
+        onCreateNewThread={createNewThread}
+        onSwitchThread={switchThread}
+        onOpenRename={openRename}
+        onDeleteThread={deleteThread}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
       <SidebarInset className="h-svh min-h-0 overflow-hidden">
         <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-3">
           <div className="flex min-w-0 items-center gap-2">
-            <SidebarTrigger>
-              <PanelLeftIcon />
-            </SidebarTrigger>
+            <SidebarTrigger />
             <Separator orientation="vertical" className="h-5" />
             <div className="flex min-w-0 items-center">
               <h1 className="truncate text-sm font-medium">{activeThread.title}</h1>
