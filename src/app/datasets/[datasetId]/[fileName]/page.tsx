@@ -74,19 +74,27 @@ export default async function DatasetFilePage({
             <CardDescription>
               Values are shown as strings from the converted CSV. Only the
               first {DATASET_PREVIEW_ROW_LIMIT} rows are stored in metadata and
-              sent to the browser.
+              sent to the browser. Use the horizontal scrollbar to inspect all{" "}
+              {preview.columns.length} columns.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {preview.columns.length ? (
-              <Table className="min-w-max">
+              <Table
+                className="min-w-max"
+                containerClassName="max-h-[min(65svh,42rem)] overflow-auto"
+              >
                 <TableCaption>
                   Preview of {filePath} with {preview.columns.length} columns.
                 </TableCaption>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-muted/40">
                   <TableRow>
                     {preview.columns.map((column, index) => (
-                      <TableHead key={`${column}-${index}`} className="bg-muted/40">
+                      <TableHead
+                        key={`${column}-${index}`}
+                        className="bg-muted/40"
+                        scope="col"
+                      >
                         {column}
                       </TableHead>
                     ))}

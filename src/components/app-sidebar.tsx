@@ -178,10 +178,7 @@ export function AppSidebar({
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>
-            <DatabaseIcon />
-            <span>Datasets</span>
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>Datasets</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {DATASET_CATALOG.map((dataset) => {

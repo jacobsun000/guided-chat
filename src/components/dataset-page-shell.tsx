@@ -68,7 +68,10 @@ export function DatasetPageShell({
             <h1 className="truncate text-sm font-medium">{title}</h1>
           </div>
         </header>
-        <ScrollArea className="min-h-0 flex-1 overflow-hidden">
+        <ScrollArea
+          className="min-h-0 flex-1 overflow-hidden"
+          viewportClassName="[&>div]:!block [&>div]:!min-w-0"
+        >
           {children}
         </ScrollArea>
       </SidebarInset>
