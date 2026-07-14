@@ -9,7 +9,8 @@
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Where Mortgage Applications Succeed",
-      "content": "Where are homebuyers most likely to have their mortgage applications approved?"
+      "content": "Where are homebuyers most likely to have their mortgage applications approved?",
+      "deliverables": "Submit a Markdown file named report.md containing your definition of approval, the comparison groups you chose, application counts and approval rates for each reported group, a concise answer to the question, and any important data limitations."
     },
     {
       "id": "hmda-02",
@@ -20,7 +21,8 @@
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Why Mortgage Applications Are Denied",
-      "content": "What seems to distinguish applications that are denied from those that move forward?"
+      "content": "What seems to distinguish applications that are denied from those that move forward?",
+      "deliverables": "Submit a Markdown file named report.md containing the denial and comparison cohorts, the factors and denial reasons examined, supporting statistics or model results, your interpretation, and caveats about missing or multiple denial reasons."
     },
     {
       "id": "hmda-03",
@@ -31,7 +33,8 @@
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Lenders Serving Their Communities",
-      "content": "Which lenders appear to serve their local communities particularly well?"
+      "content": "Which lenders appear to serve their local communities particularly well?",
+      "deliverables": "Submit a text file named answer.txt identifying the lenders you selected, explaining what community and strong service mean in your analysis, citing the evidence behind the assessment, and discussing at least one plausible alternative interpretation."
     },
     {
       "id": "hmda-04",
@@ -42,7 +45,8 @@
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Comparable Applicants and Unequal Outcomes",
-      "content": "Do similarly situated applicants receive meaningfully different mortgage outcomes?"
+      "content": "Do similarly situated applicants receive meaningfully different mortgage outcomes?",
+      "deliverables": "Submit a Markdown file named report.md documenting how comparable applicants and outcomes were defined, the adjustment or matching approach, group-level sample sizes and estimates with uncertainty, robustness checks, and a careful statement of what the analysis can and cannot establish."
     },
     {
       "id": "hmda-05",
@@ -53,7 +57,8 @@
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Finding Underserved Mortgage Markets",
-      "content": "Which communities seem underserved by the mortgage market, and what might be going wrong?"
+      "content": "Which communities seem underserved by the mortgage market, and what might be going wrong?",
+      "deliverables": "Submit a Markdown file named report.md containing a ranked shortlist of communities, your definition and indicators of underservice, evidence for each selection, competing explanations, data limitations, and one actionable recommendation for further investigation."
     },
     {
       "id": "imdb-01",
@@ -64,7 +69,8 @@
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Titles Audiences Rate Highly",
-      "content": "What kinds of titles tend to receive higher audience ratings?"
+      "content": "What kinds of titles tend to receive higher audience ratings?",
+      "deliverables": "Submit a Markdown file named report.md containing the title categories and eligibility rules used, rating and vote-count summaries, comparisons supporting your answer, sensitivity to low-vote titles, and key limitations."
     },
     {
       "id": "imdb-02",
@@ -75,7 +81,8 @@
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "When Series Lose Momentum",
-      "content": "When does a television series seem to lose its audience's enthusiasm?"
+      "content": "When does a television series seem to lose its audience's enthusiasm?",
+      "deliverables": "Submit a Markdown file named report.md defining loss of momentum, describing the eligible series and episode ordering, presenting the observed rating or voting trajectories, identifying representative series, and noting missing-data and selection limitations."
     },
     {
       "id": "imdb-03",
@@ -86,7 +93,8 @@
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Stories That Cross Borders",
-      "content": "Which titles seem to travel especially well across languages and regions?"
+      "content": "Which titles seem to travel especially well across languages and regions?",
+      "deliverables": "Submit a CSV file named cross_border_titles.csv with the selected title identifiers, titles, and reach measures, plus a Markdown file named methodology.md explaining the reach definition, filters, ranking method, notable findings, and limitations of using alternate-title records as a proxy."
     },
     {
       "id": "imdb-04",
@@ -97,7 +105,8 @@
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Recognizing a Career Breakthrough",
-      "content": "What does a real career breakthrough look like for people working in film and television?"
+      "content": "What does a real career breakthrough look like for people working in film and television?",
+      "deliverables": "Submit a text file named answer.txt stating your working definition of a breakthrough, describing the career evidence and examples that shaped it, addressing counterexamples or alternative definitions, and summarizing the limits of the available data."
     },
     {
       "id": "imdb-05",
@@ -108,7 +117,8 @@
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Influential Creative Collaborators",
-      "content": "Who seems unusually influential in shaping creative collaboration networks?"
+      "content": "Who seems unusually influential in shaping creative collaboration networks?",
+      "deliverables": "Submit a Markdown file named report.md identifying the collaborators you consider influential, defining the network and influence measure, providing reproducible supporting metrics and illustrative cases, comparing at least one alternative measure, and discussing interpretation limits."
     },
     {
       "id": "tlc-01",
@@ -119,7 +129,8 @@
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "When Riders Tip More",
-      "content": "When do riders tend to leave more generous tips?"
+      "content": "When do riders tend to leave more generous tips?",
+      "deliverables": "Submit a Markdown file named report.md defining the eligible trips and tip measure, reporting trip counts and tip summaries across the conditions examined, answering the question with supporting comparisons, and noting payment-type and data-quality limitations."
     },
     {
       "id": "tlc-02",
@@ -130,7 +141,8 @@
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "Unexpectedly Slow or Expensive Routes",
-      "content": "Which trips or routes are slower or more expensive than a rider might reasonably expect?"
+      "content": "Which trips or routes are slower or more expensive than a rider might reasonably expect?",
+      "deliverables": "Submit a CSV file named flagged_routes.csv listing each flagged route or trip group and its observed and expected time or cost measures, plus a Markdown file named methodology.md documenting filters, baselines, thresholds, main findings, and limitations."
     },
     {
       "id": "tlc-03",
@@ -141,7 +153,8 @@
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "Suspicious Trip Records",
-      "content": "Which trip records look suspicious, and what kinds of data problems might they reveal?"
+      "content": "Which trip records look suspicious, and what kinds of data problems might they reveal?",
+      "deliverables": "Submit a CSV file named suspicious_trips.csv containing record identifiers or reproducible row references, anomaly categories, and the values that triggered each flag, plus a Markdown file named methodology.md with detection rules, category counts, manual checks, and false-positive caveats."
     },
     {
       "id": "tlc-04",
@@ -152,7 +165,8 @@
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "Where Ride Availability Falls Short",
-      "content": "Where and when does ride availability seem poorly matched to what travelers need?"
+      "content": "Where and when does ride availability seem poorly matched to what travelers need?",
+      "deliverables": "Submit a Markdown file named report.md identifying the places and times of concern, defining the supply and need proxies used, presenting supporting evidence, considering contradictory cases and alternative explanations, and distinguishing observations from recommendations."
     },
     {
       "id": "tlc-05",
@@ -163,7 +177,8 @@
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "How Well Specialized Ride Options Work",
-      "content": "How well do shared and accessible ride options appear to work for New Yorkers?"
+      "content": "How well do shared and accessible ride options appear to work for New Yorkers?",
+      "deliverables": "Submit a text file named answer.txt describing how you evaluated shared and accessible services, the metrics and comparisons used, the evidence supporting your assessment, important geographic or temporal differences, and limitations of the available service indicators."
     },
     {
       "id": "olist-01",
@@ -174,7 +189,8 @@
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Orders That Arrive Late",
-      "content": "Which kinds of orders are most likely to arrive later than promised?"
+      "content": "Which kinds of orders are most likely to arrive later than promised?",
+      "deliverables": "Submit a Markdown file named report.md defining eligible and late orders, reporting order counts and late-delivery rates for the segments examined, highlighting the strongest patterns, and documenting timestamp, status, and missing-data caveats."
     },
     {
       "id": "olist-02",
@@ -185,7 +201,8 @@
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "What Leads to Better Reviews",
-      "content": "When do customers tend to leave better reviews?"
+      "content": "When do customers tend to leave better reviews?",
+      "deliverables": "Submit a Markdown file named report.md defining the analysis unit and review outcome, presenting supporting comparisons or model results with sample sizes, explaining the factors associated with better reviews, and addressing join multiplicity, confounding, and missing reviews."
     },
     {
       "id": "olist-03",
@@ -196,7 +213,8 @@
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Why Shipping Feels Expensive",
-      "content": "For which purchases does shipping become unusually expensive relative to what is being bought?"
+      "content": "For which purchases does shipping become unusually expensive relative to what is being bought?",
+      "deliverables": "Submit a CSV file named high_shipping_burden.csv containing the selected orders or segments and their item value, freight cost, and burden measure, plus a Markdown file named methodology.md explaining aggregation choices, thresholds, findings, and multi-item-order caveats."
     },
     {
       "id": "olist-04",
@@ -207,7 +225,8 @@
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Sellers Customers Can Rely On",
-      "content": "Which sellers seem to provide consistently strong service?"
+      "content": "Which sellers seem to provide consistently strong service?",
+      "deliverables": "Submit a CSV file named seller_scorecard.csv with seller identifiers, eligible order counts, component metrics, and the final assessment, plus a Markdown file named methodology.md explaining metric choices, minimum-volume rules, uncertainty, rankings, and limitations."
     },
     {
       "id": "olist-05",
@@ -218,7 +237,8 @@
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Promising Marketplace Expansion",
-      "content": "Where might the marketplace have its most promising room to expand?"
+      "content": "Where might the marketplace have its most promising room to expand?",
+      "deliverables": "Submit a Markdown file named report.md recommending and ranking expansion opportunities, defining the opportunity measures and geographic or product scope, presenting evidence, comparing rejected alternatives, and discussing operational constraints and proxy limitations."
     },
     {
       "id": "sec-01",
@@ -229,7 +249,8 @@
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Financial Statements That Do Not Add Up",
-      "content": "Which reported financial statements contain totals that do not seem to add up?"
+      "content": "Which reported financial statements contain totals that do not seem to add up?",
+      "deliverables": "Submit a CSV file named statement_issues.csv containing filer, filing, statement, period, reported total, reconstructed total, difference, units, and issue type, plus a Markdown file named methodology.md documenting calculation rules, tolerances, validation checks, and caveats."
     },
     {
       "id": "sec-02",
@@ -240,7 +261,8 @@
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Companies Improving Profitability",
-      "content": "Which companies appear to be improving their profitability, and which are moving the other way?"
+      "content": "Which companies appear to be improving their profitability, and which are moving the other way?",
+      "deliverables": "Submit a CSV file named profitability_trends.csv with company identifiers, aligned periods, revenue and profitability measures, changes, and trend classification, plus a Markdown file named methodology.md explaining tag mappings, inclusion rules, main findings, and comparability limitations."
     },
     {
       "id": "sec-03",
@@ -251,7 +273,8 @@
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Risks Companies Are Emphasizing",
-      "content": "What risks and uncertainties are companies emphasizing in their disclosures?"
+      "content": "What risks and uncertainties are companies emphasizing in their disclosures?",
+      "deliverables": "Submit a text file named answer.txt summarizing the risk themes you identified, naming representative companies or disclosures for each theme, explaining how themes were derived, noting meaningful variation or counterexamples, and describing coverage and interpretation limitations."
     },
     {
       "id": "sec-04",
@@ -262,7 +285,8 @@
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Comparing Revenue Across Filers",
-      "content": "How comparable are the revenue figures that different companies report?"
+      "content": "How comparable are the revenue figures that different companies report?",
+      "deliverables": "Submit a CSV file named revenue_comparability.csv containing the compared filers and facts, taxonomy tags, periods, units, dimensions, mapping decisions, and comparability assessment, plus a Markdown file named methodology.md with validation examples, findings, and limitations."
     },
     {
       "id": "sec-05",
@@ -273,7 +297,8 @@
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Financially Resilient Companies",
-      "content": "Which companies look best prepared to withstand financial stress?"
+      "content": "Which companies look best prepared to withstand financial stress?",
+      "deliverables": "Submit a Markdown file named report.md identifying and ranking the companies assessed as resilient, defining the peer set and resilience criteria, tracing each conclusion to filing metrics or disclosures, testing at least one alternative weighting or stress scenario, and discussing uncertainty."
     }
   ]
 }

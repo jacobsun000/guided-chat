@@ -1,4 +1,4 @@
-import taskData from "../../tasks/dataset_tasks.json"
+import taskData from "../../tasks/tasks.json"
 
 import { DATASETS, getDatasetHref, type Dataset } from "@/lib/datasets"
 
@@ -14,6 +14,7 @@ export type ResearchTask = {
   dataset: string
   name: string
   content: string
+  deliverables: string
 }
 
 export const TASKS = taskData.tasks as ResearchTask[]

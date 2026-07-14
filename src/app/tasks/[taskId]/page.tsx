@@ -59,6 +59,20 @@ export default async function TaskPage({ params }: TaskPageProps) {
           </div>
         </div>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Deliverables</CardTitle>
+            <CardDescription>
+              Files and supporting information to submit.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {task.deliverables}
+            </p>
+          </CardContent>
+        </Card>
+
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
