@@ -11,12 +11,15 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
   AlertCircleIcon,
+  AlertTriangleIcon,
   BotIcon,
   CheckIcon,
   CopyIcon,
   Edit3Icon,
+  GitBranchIcon,
   KeyRoundIcon,
   Loader2Icon,
+  MapIcon,
   MoreHorizontalIcon,
   PanelLeftIcon,
   PlusIcon,
@@ -108,6 +111,10 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useTheme, type Theme } from "@/components/theme-provider"
 import {
+  DependencyMapGraph,
+  type DependencyMapGraphNodeRequest,
+} from "@/components/dependency-map-graph"
+import {
   DEFAULT_PROVIDER_OPTIONS,
   createDefaultSettings,
   createDefaultStore,
@@ -122,6 +129,21 @@ import type {
   AskUserQuestionsOutput,
   ResearchAssistantMessage,
 } from "@/lib/question-tool"
+import {
+  calculateNodeStates,
+  flagNode,
+  getAvailableNodeIds,
+  getHardPrerequisiteIds,
+  markNodeUnderstood,
+  markNodeVisited,
+  normalizeUserMapState,
+  summarizeUserMapState,
+  type DependencyMap,
+  type DependencyNode,
+  type OutputDependencyMapInput,
+  type OutputDependencyMapResult,
+  type UserMapState,
+} from "@/lib/dependency-map"
 import { cn } from "@/lib/utils"
 
 const ACCESS_TOKEN_STORAGE_KEY = "guided-chat.access-token.v1"
@@ -240,6 +262,13 @@ type AskUserQuestionsPart = Extract<
   { type: "tool-ask_user_questions" }
 >
 
+type DependencyMapPart = Extract<
+  ResearchAssistantMessage["parts"][number],
+  { type: "tool-output_dependency_map" }
+>
+
+type DependencyNodeRequest = DependencyMapGraphNodeRequest
+
 function createHydrationStore(): ThreadsStore {
   const thread = createThread({
     id: HYDRATION_THREAD_ID,
@@ -283,10 +312,35 @@ function getPendingQuestionPart(messages: ResearchAssistantMessage[]) {
   return null
 }
 
+function shouldSendAutomaticallyAfterToolCalls({
+  messages,
+}: {
+  messages: ResearchAssistantMessage[]
+}) {
+  if (!lastAssistantMessageIsCompleteWithToolCalls({ messages })) {
+    return false
+  }
+
+  const message = messages[messages.length - 1]
+
+  if (!message || message.role !== "assistant") {
+    return false
+  }
+
+  const lastStepStartIndex = message.parts.reduce((lastIndex, part, index) => {
+    return part.type === "step-start" ? index : lastIndex
+  }, -1)
+  const lastStepParts = message.parts.slice(lastStepStartIndex + 1)
+
+  return !lastStepParts.some((part) => part.type === "tool-output_dependency_map")
+}
+
 function isVisibleAssistantPart(part: ResearchAssistantMessage["parts"][number]) {
   return (
     part.type === "text" ||
     (part.type === "tool-ask_user_questions" &&
+      (part.state === "output-available" || part.state === "output-error")) ||
+    (part.type === "tool-output_dependency_map" &&
       (part.state === "output-available" || part.state === "output-error"))
   )
 }
@@ -356,6 +410,53 @@ function withThinkingEffort(
   }
 }
 
+function buildDependencyNodeRequestText({
+  map,
+  node,
+  state,
+  overrideLocked,
+  missingPrerequisiteIds,
+}: {
+  map: DependencyMap
+  node: DependencyNode
+  state: UserMapState
+  overrideLocked: boolean
+  missingPrerequisiteIds: string[]
+}) {
+  const summary = summarizeUserMapState(map, state)
+  const missingPrerequisites = missingPrerequisiteIds
+    .map((nodeId) => map.nodes.find((candidate) => candidate.id === nodeId))
+    .filter((candidate): candidate is DependencyNode => Boolean(candidate))
+
+  return [
+    "Inspect this dependency-map node from the existing map.",
+    `map_id: ${map.map_id}`,
+    `node_id: ${node.id}`,
+    `node_label: ${node.label}`,
+    `view_mode: ${node.view_mode}`,
+    `override_locked: ${overrideLocked ? "yes" : "no"}`,
+    `unreviewed_hard_prerequisites: ${formatNodeList(missingPrerequisites)}`,
+    "",
+    "Current user map state:",
+    `visited: ${formatNodeList(summary.visited)}`,
+    `understood: ${formatNodeList(summary.understood)}`,
+    `accepted: ${formatNodeList(summary.accepted)}`,
+    `rejected: ${formatNodeList(summary.rejected)}`,
+    `flagged: ${formatNodeList(summary.flagged)}`,
+    `unresolved_core_nodes: ${formatNodeList(summary.unresolved)}`,
+    "",
+    "Render only this node using its view_mode. If prerequisites are incomplete, warn briefly before the node view. Do not provide the final answer unless this selected node is the final synthesis workspace, and even then make the synthesis conditional on the current state above.",
+  ].join("\n")
+}
+
+function formatNodeList(nodes: DependencyNode[]) {
+  if (!nodes.length) {
+    return "none"
+  }
+
+  return nodes.map((node) => `${node.label} (${node.id})`).join(", ")
+}
+
 async function copyTextToClipboard(text: string) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text)
@@ -381,10 +482,16 @@ async function copyTextToClipboard(text: string) {
 }
 
 function normalizeStoredThread(thread: ChatThread): ChatThread {
-  const storedSettings: Partial<ChatSettings> & { system?: string } = {
+  const storedSettings: Partial<ChatSettings> & {
+    system?: string
+    dependencyMapStates?: ChatThread["dependencyMapStates"]
+  } = {
     ...thread.settings,
   }
+  const persistedMapStates =
+    thread.dependencyMapStates ?? storedSettings.dependencyMapStates
   delete storedSettings.system
+  delete storedSettings.dependencyMapStates
 
   const settings = {
     ...createDefaultSettings(),
@@ -398,6 +505,10 @@ function normalizeStoredThread(thread: ChatThread): ChatThread {
   return {
     ...thread,
     settings,
+    dependencyMapStates:
+      persistedMapStates && typeof persistedMapStates === "object"
+        ? persistedMapStates
+        : {},
     messages: Array.isArray(thread.messages) ? thread.messages : [],
   }
 }
@@ -501,7 +612,7 @@ export default function Home() {
     id: activeThread?.id,
     messages: (activeThread?.messages ?? []) as ResearchAssistantMessage[],
     transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    sendAutomaticallyWhen: shouldSendAutomaticallyAfterToolCalls,
     onError: (err) => {
       setComposerError(err.message)
     },
@@ -934,6 +1045,117 @@ export default function Home() {
     [addToolOutput, clearError, createChatSession, hasAccessToken]
   )
 
+  const getDependencyMapState = React.useCallback(
+    (map: DependencyMap) =>
+      normalizeUserMapState(activeThread.dependencyMapStates?.[map.map_id], map.map_id),
+    [activeThread.dependencyMapStates]
+  )
+
+  const updateDependencyMapState = React.useCallback(
+    (mapId: string, updater: (state: UserMapState) => UserMapState) => {
+      updateActiveThread((thread) => {
+        const currentState = normalizeUserMapState(
+          thread.dependencyMapStates?.[mapId],
+          mapId
+        )
+        const nextState = updater(currentState)
+
+        return {
+          ...thread,
+          updatedAt: new Date().toISOString(),
+          dependencyMapStates: {
+            ...(thread.dependencyMapStates ?? {}),
+            [mapId]: nextState,
+          },
+        }
+      })
+    },
+    [updateActiveThread]
+  )
+
+  const inspectDependencyNode = React.useCallback(
+    async ({ map, node, overrideLocked = false }: DependencyNodeRequest) => {
+      clearError()
+      setComposerError(null)
+
+      if (isStreaming || hasPendingQuestion) {
+        return
+      }
+
+      if (!hasAccessToken) {
+        setComposerError("Enter the workspace access token before continuing.")
+        setSettingsOpen(true)
+        return
+      }
+
+      const currentState = getDependencyMapState(map)
+      const visitedOrUnderstood = new Set([
+        ...currentState.visited_node_ids,
+        ...currentState.understood_node_ids,
+      ])
+      const missingPrerequisiteIds = getHardPrerequisiteIds(map, node.id).filter(
+        (nodeId) => !visitedOrUnderstood.has(nodeId)
+      )
+      const nextState = markNodeVisited(currentState, node.id)
+
+      updateDependencyMapState(map.map_id, () => nextState)
+
+      try {
+        const requestBody = await createChatSession()
+        await sendMessage(
+          {
+            text: buildDependencyNodeRequestText({
+              map,
+              node,
+              state: nextState,
+              overrideLocked,
+              missingPrerequisiteIds,
+            }),
+          },
+          {
+            body: requestBody,
+          }
+        )
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unable to inspect the node."
+        setComposerError(message)
+        if (message.includes("Provider options")) {
+          setProviderOptionsError(message)
+          setSettingsOpen(true)
+        }
+      }
+    },
+    [
+      clearError,
+      createChatSession,
+      getDependencyMapState,
+      hasAccessToken,
+      hasPendingQuestion,
+      isStreaming,
+      sendMessage,
+      updateDependencyMapState,
+    ]
+  )
+
+  const markDependencyNodeUnderstood = React.useCallback(
+    (map: DependencyMap, node: DependencyNode) => {
+      updateDependencyMapState(map.map_id, (state) =>
+        markNodeUnderstood(state, node.id)
+      )
+      toast.success(`Marked "${node.label}" understood`)
+    },
+    [updateDependencyMapState]
+  )
+
+  const flagDependencyNode = React.useCallback(
+    (map: DependencyMap, node: DependencyNode) => {
+      updateDependencyMapState(map.map_id, (state) => flagNode(state, node.id))
+      toast.success(`Flagged "${node.label}"`)
+    },
+    [updateDependencyMapState]
+  )
+
   const copyMessage = React.useCallback(async (message: UIMessage) => {
     const text = getMessageText(message)
 
@@ -1120,7 +1342,12 @@ export default function Home() {
                 <MessageBubble
                   key={message.id}
                   message={message}
+                  dependencyMapStates={activeThread.dependencyMapStates ?? {}}
+                  disabled={isStreaming || hasPendingQuestion}
                   onCopy={() => copyMessage(message)}
+                  onInspectDependencyNode={inspectDependencyNode}
+                  onMarkDependencyNodeUnderstood={markDependencyNodeUnderstood}
+                  onFlagDependencyNode={flagDependencyNode}
                 />
               ))}
 
@@ -1283,10 +1510,23 @@ export default function Home() {
 
 function MessageBubble({
   message,
+  dependencyMapStates,
+  disabled,
   onCopy,
+  onInspectDependencyNode,
+  onMarkDependencyNodeUnderstood,
+  onFlagDependencyNode,
 }: {
   message: ResearchAssistantMessage
+  dependencyMapStates: Record<string, UserMapState>
+  disabled: boolean
   onCopy: () => void
+  onInspectDependencyNode: (request: DependencyNodeRequest) => void
+  onMarkDependencyNodeUnderstood: (
+    map: DependencyMap,
+    node: DependencyNode
+  ) => void
+  onFlagDependencyNode: (map: DependencyMap, node: DependencyNode) => void
 }) {
   const isUser = message.role === "user"
   const text = getMessageText(message)
@@ -1330,6 +1570,20 @@ function MessageBubble({
                   )
                 }
 
+                if (part.type === "tool-output_dependency_map") {
+                  return (
+                    <DependencyMapPanel
+                      key={part.toolCallId}
+                      part={part}
+                      stateByMapId={dependencyMapStates}
+                      disabled={disabled}
+                      onInspectNode={onInspectDependencyNode}
+                      onMarkUnderstood={onMarkDependencyNodeUnderstood}
+                      onFlagNode={onFlagDependencyNode}
+                    />
+                  )
+                }
+
                 return (
                   <AnsweredQuestionsTranscript key={part.toolCallId} part={part} />
                 )
@@ -1355,6 +1609,197 @@ function MessageBubble({
         </div>
       </div>
     </article>
+  )
+}
+
+function DependencyMapPanel({
+  part,
+  stateByMapId,
+  disabled,
+  onInspectNode,
+  onMarkUnderstood,
+  onFlagNode,
+}: {
+  part: DependencyMapPart
+  stateByMapId: Record<string, UserMapState>
+  disabled: boolean
+  onInspectNode: (request: DependencyNodeRequest) => void
+  onMarkUnderstood: (map: DependencyMap, node: DependencyNode) => void
+  onFlagNode: (map: DependencyMap, node: DependencyNode) => void
+}) {
+  if (part.state === "output-error") {
+    return (
+      <Alert variant="destructive">
+        <AlertCircleIcon />
+        <AlertTitle>Dependency map failed</AlertTitle>
+        <AlertDescription>{part.errorText}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (part.state !== "output-available") {
+    return null
+  }
+
+  const input = part.input as OutputDependencyMapInput
+  const output = part.output as OutputDependencyMapResult
+  const map = input.dependency_map
+  const userState = normalizeUserMapState(
+    stateByMapId[map.map_id],
+    map.map_id
+  )
+  const nodeStates = calculateNodeStates(map, userState)
+  const availableNodeIds = getAvailableNodeIds(map, userState)
+  const availableNodeIdSet = new Set(availableNodeIds)
+  const recommendedNodes = map.recommended_first_node_ids
+    .filter((nodeId) => availableNodeIdSet.has(nodeId))
+    .map((nodeId) => map.nodes.find((node) => node.id === nodeId))
+    .filter((node): node is DependencyNode => Boolean(node))
+  const startingNodes =
+    recommendedNodes.length > 0
+      ? recommendedNodes
+      : availableNodeIds
+          .slice(0, 3)
+          .map((nodeId) => map.nodes.find((node) => node.id === nodeId))
+          .filter((node): node is DependencyNode => Boolean(node))
+  const finalNode = map.nodes.find((node) => node.id === map.final_node_id)
+  const warnings = output.validation_warnings ?? []
+
+  return (
+    <section className="border bg-card text-card-foreground shadow-sm">
+      <div className="border-b px-3 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <MapIcon className="size-4 text-primary" />
+              <h2 className="text-sm font-semibold">Dependency Map</h2>
+              <Badge variant="outline">{map.nodes.length} nodes</Badge>
+              <Badge variant="outline">{map.edges.length} edges</Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {map.research_question}
+            </p>
+          </div>
+          {finalNode && (
+            <Button
+              size="sm"
+              variant={
+                nodeStates[finalNode.id] === "locked" ? "outline" : "secondary"
+              }
+              disabled={disabled}
+              onClick={() =>
+                onInspectNode({
+                  map,
+                  node: finalNode,
+                  overrideLocked: nodeStates[finalNode.id] === "locked",
+                })
+              }
+            >
+              <GitBranchIcon data-icon="inline-start" />
+              Final synthesis
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {map.detected_knowledge_gaps.slice(0, 6).map((gap) => (
+            <Badge key={gap} variant="secondary">
+              {gap}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-3 p-3">
+        <div className="grid gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-sm font-medium">
+                Start with an available node
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Inspect nodes, mark understood items, and flag weak links before
+                opening synthesis.
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {startingNodes.map((node) => (
+                <Button
+                  key={node.id}
+                  size="sm"
+                  variant="outline"
+                  disabled={disabled}
+                  onClick={() => onInspectNode({ map, node })}
+                >
+                  {node.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {warnings.length > 0 && (
+            <Alert>
+              <AlertTriangleIcon />
+              <AlertTitle>Map validation warnings</AlertTitle>
+              <AlertDescription>
+                {warnings.slice(0, 3).join(" ")}
+                {warnings.length > 3 ? ` +${warnings.length - 3} more.` : ""}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <DependencyMapGraph
+          map={map}
+          nodeStates={nodeStates}
+          userState={userState}
+          disabled={disabled}
+          onInspectNode={onInspectNode}
+          onMarkUnderstood={onMarkUnderstood}
+          onFlagNode={onFlagNode}
+        />
+
+        <div className="grid gap-2 border-t pt-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <GitBranchIcon className="size-4 text-muted-foreground" />
+            Dependency links
+          </div>
+          <div className="grid gap-1.5 text-xs">
+            {map.edges.map((edge, index) => {
+              const from = map.nodes.find((node) => node.id === edge.from)
+              const to = map.nodes.find((node) => node.id === edge.to)
+
+              return (
+                <div
+                  key={`${edge.from}-${edge.to}-${index}`}
+                  className="grid gap-1 border bg-muted/20 px-2 py-1.5 sm:grid-cols-[1fr_auto_1fr]"
+                >
+                  <span className="font-medium">{from?.label ?? edge.from}</span>
+                  <span className="text-muted-foreground">
+                    {edge.kind.replaceAll("_", " ")} · {edge.strength}
+                  </span>
+                  <span>{to?.label ?? edge.to}</span>
+                  <span className="text-muted-foreground sm:col-span-3">
+                    {edge.rationale}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {map.global_uncertainties.length > 0 && (
+          <div className="border-t pt-3 text-sm">
+            <div className="mb-1 font-medium">Global uncertainties</div>
+            <ul className="grid gap-1 text-muted-foreground">
+              {map.global_uncertainties.map((uncertainty) => (
+                <li key={uncertainty}>{uncertainty}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
