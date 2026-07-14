@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# Downloaded raw datasets are local artifacts; keep their small metadata files tracked.
+/datasets/**/*.csv
+
 # production
 /build
 /data
