@@ -1,5 +1,7 @@
 import type { UIMessage } from "ai"
 
+import type { UserMapState } from "@/lib/dependency-map"
+
 export type ProviderId = "openai" | "anthropic" | "google"
 
 export type ProviderOptionsJson = Record<ProviderId, string>
@@ -18,6 +20,7 @@ export type ChatThread = {
   updatedAt: string
   messages: UIMessage[]
   settings: ChatSettings
+  dependencyMapStates?: Record<string, UserMapState>
 }
 
 export type ThreadsStore = {
@@ -65,6 +68,7 @@ export function createThread({
     updatedAt: now,
     messages: [],
     settings: createDefaultSettings(),
+    dependencyMapStates: {},
   }
 }
 

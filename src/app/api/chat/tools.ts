@@ -6,6 +6,14 @@ import {
   askUserQuestionsInputSchema,
   askUserQuestionsOutputSchema,
 } from "@/lib/question-tool"
+import {
+  createInitialUserMapState,
+  getAvailableNodeIds,
+  outputDependencyMapInputSchema,
+  outputDependencyMapResultSchema,
+  validateDependencyMap,
+  type DependencyMap,
+} from "@/lib/dependency-map"
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
@@ -15,10 +23,19 @@ type ReadImageResult = {
   base64: string
 }
 
+const globalForDependencyMaps = globalThis as typeof globalThis & {
+  __guidedChatDependencyMaps?: Map<string, DependencyMap>
+}
+
+const dependencyMaps =
+  globalForDependencyMaps.__guidedChatDependencyMaps ??
+  (globalForDependencyMaps.__guidedChatDependencyMaps = new Map())
+
 export function createAgentTools() {
   const tools: ToolSet = {
     ask_user_questions: createAskUserQuestionsTool(),
     read_image: createReadImageTool(),
+    output_dependency_map: createOutputDependencyMapTool(),
   }
 
   const tavilyApiKey = process.env.TAVILY_API_KEY?.trim()
@@ -36,6 +53,42 @@ function createAskUserQuestionsTool() {
       "Ask the user targeted questions when their input is needed to continue productively. Use this for clarifying research uncertainty, guiding progressive exploration, or checking understanding.",
     inputSchema: askUserQuestionsInputSchema,
     outputSchema: askUserQuestionsOutputSchema,
+  })
+}
+
+function createOutputDependencyMapTool() {
+  return tool({
+    description:
+      "Render the structured dependency map after research and before any slide, answer, or node-specific teaching content. The input must be a DAG of inspectable artifacts, not hidden chain-of-thought.",
+    inputSchema: outputDependencyMapInputSchema,
+    outputSchema: outputDependencyMapResultSchema,
+    execute: async ({ dependency_map }) => {
+      const validation = validateDependencyMap(dependency_map)
+
+      if (!validation.valid) {
+        throw new Error(
+          `Dependency map validation failed: ${validation.errors.join("; ")}`
+        )
+      }
+
+      dependencyMaps.set(dependency_map.map_id, dependency_map)
+
+      const initialState = createInitialUserMapState(dependency_map.map_id)
+      const availableNodeIds = getAvailableNodeIds(dependency_map, initialState)
+
+      return {
+        map_id: dependency_map.map_id,
+        rendered: true,
+        available_node_ids: availableNodeIds,
+        recommended_first_node_ids:
+          dependency_map.recommended_first_node_ids.filter((nodeId) =>
+            availableNodeIds.includes(nodeId)
+          ),
+        validation_warnings: validation.warnings.length
+          ? validation.warnings
+          : undefined,
+      }
+    },
   })
 }
 

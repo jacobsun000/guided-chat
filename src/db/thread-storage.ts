@@ -21,23 +21,38 @@ function parseJson<T>(value: string, fallback: T): T {
   }
 }
 
-function normalizeSettings(settings: Partial<ChatSettings>): ChatSettings {
+type PersistedSettings = Partial<ChatSettings> & {
+  dependencyMapStates?: ChatThread["dependencyMapStates"]
+}
+
+function normalizeSettings(settings: PersistedSettings): ChatSettings {
+  const { dependencyMapStates, ...chatSettings } = settings
+  void dependencyMapStates
+
   return {
     ...createDefaultSettings(),
-    ...settings,
+    ...chatSettings,
     providerOptions: {
       ...DEFAULT_PROVIDER_OPTIONS,
-      ...settings.providerOptions,
+      ...chatSettings.providerOptions,
     },
   }
 }
 
 function normalizeThread(thread: ChatThread): ChatThread {
+  const settings = (thread.settings ?? {}) as PersistedSettings
+  const persistedMapStates =
+    thread.dependencyMapStates ?? settings.dependencyMapStates
+
   return {
     ...thread,
     title: thread.title || "New chat",
     messages: Array.isArray(thread.messages) ? thread.messages : [],
-    settings: normalizeSettings(thread.settings ?? {}),
+    settings: normalizeSettings(settings),
+    dependencyMapStates:
+      persistedMapStates && typeof persistedMapStates === "object"
+        ? persistedMapStates
+        : {},
   }
 }
 
@@ -111,7 +126,10 @@ export function saveThreadsStore(store: ThreadsStore): ThreadsStore {
           createdAt: thread.createdAt,
           updatedAt: thread.updatedAt,
           messagesJson: JSON.stringify(thread.messages),
-          settingsJson: JSON.stringify(thread.settings),
+          settingsJson: JSON.stringify({
+            ...thread.settings,
+            dependencyMapStates: thread.dependencyMapStates ?? {},
+          }),
         }))
       )
       .run()

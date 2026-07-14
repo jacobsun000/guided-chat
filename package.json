@@ -7,6 +7,7 @@
     "build": "next build",
     "db:push": "drizzle-kit push",
     "start": "next start",
+    "test": "node --no-warnings --experimental-strip-types --test src/lib/dependency-map.test.mts",
     "lint": "eslint"
   },
   "dependencies": {
