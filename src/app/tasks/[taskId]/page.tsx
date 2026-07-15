@@ -23,6 +23,12 @@ import {
   getTaskDataset,
   getTaskDatasetHref,
 } from "@/lib/tasks"
+import {
+  getTaskEvaluationHref,
+  getTaskEvaluations,
+} from "@/lib/task-results"
+
+export const dynamic = "force-dynamic"
 
 type TaskPageProps = {
   params: Promise<{ taskId: string }>
@@ -38,6 +44,7 @@ export default async function TaskPage({ params }: TaskPageProps) {
 
   const dataset = getTaskDataset(task)
   const datasetHref = getTaskDatasetHref(task)
+  const evaluations = await getTaskEvaluations(task.id)
 
   return (
     <DatasetPageShell title={task.name} sectionLabel="Tasks">
@@ -147,6 +154,42 @@ export default async function TaskPage({ params }: TaskPageProps) {
               </Link>
             ) : (
               <p className="text-sm text-muted-foreground">{task.dataset}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Evaluations</CardTitle>
+            <CardDescription>
+              Submitted analysis results and the files included with each one.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {evaluations.length ? (
+              <div className="divide-y">
+                {evaluations.map((evaluation) => (
+                  <Link
+                    key={evaluation.id}
+                    href={getTaskEvaluationHref(task.id, evaluation.id)}
+                    className="flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/40"
+                  >
+                    <span className="flex min-w-0 flex-col gap-1">
+                      <span className="font-medium">{evaluation.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {evaluation.files.length} supported file
+                        {evaluation.files.length === 1 ? "" : "s"} · Markdown and
+                        CSV previews available
+                      </span>
+                    </span>
+                    <ArrowRightIcon className="shrink-0 text-muted-foreground" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="p-6 text-sm text-muted-foreground">
+                No evaluation results have been submitted for this task yet.
+              </p>
             )}
           </CardContent>
         </Card>
