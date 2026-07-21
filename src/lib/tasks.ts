@@ -23,6 +23,10 @@ export function getTaskById(id: string) {
   return TASKS.find((task) => task.id === id)
 }
 
+export function getTasksByDatasetId(datasetId: string) {
+  return TASKS.filter((task) => task.dataset === datasetId)
+}
+
 export function getTaskHref(id: string) {
   return `/tasks/${encodeURIComponent(id)}`
 }

@@ -182,6 +182,10 @@ export async function getTaskEvaluations(taskId: string): Promise<TaskEvaluation
   return evaluations.filter((evaluation): evaluation is TaskEvaluation => evaluation !== null)
 }
 
+export async function getTaskEvaluationCount(taskId: string) {
+  return (await getTaskEvaluations(taskId)).length
+}
+
 export function getTaskEvaluationHref(
   taskId: string,
   evaluationId: string,

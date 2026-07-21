@@ -1,8 +1,14 @@
 import Link from "next/link"
-import { ArrowLeftIcon, ArrowRightIcon, FileTextIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  FileTextIcon,
+  NotebookTabsIcon,
+} from "lucide-react"
 import { notFound } from "next/navigation"
 
 import { DatasetPageShell } from "@/components/dataset-page-shell"
+import { TaskPreview } from "@/components/task-preview"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -12,6 +18,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getDatasetBySlug, getDatasetFileHref } from "@/lib/datasets"
+import { getTaskEvaluationCount } from "@/lib/task-results"
+import { getTasksByDatasetId } from "@/lib/tasks"
 
 export const dynamic = "force-dynamic"
 
@@ -26,6 +34,16 @@ export default async function DatasetPage({ params }: DatasetPageProps) {
   if (!dataset) {
     notFound()
   }
+
+  const relatedTasks = getTasksByDatasetId(dataset.metadata.id)
+  const evaluationCounts = new Map(
+    await Promise.all(
+      relatedTasks.map(async (task) => [
+        task.id,
+        await getTaskEvaluationCount(task.id),
+      ] as const)
+    )
+  )
 
   return (
     <DatasetPageShell title={dataset.metadata.name}>
@@ -77,6 +95,36 @@ export default async function DatasetPage({ params }: DatasetPageProps) {
                 </Link>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <NotebookTabsIcon />
+              Related tasks
+            </CardTitle>
+            <CardDescription>
+              {relatedTasks.length} research task
+              {relatedTasks.length === 1 ? "" : "s"} using this dataset.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {relatedTasks.length ? (
+              <div className="divide-y">
+                {relatedTasks.map((task) => (
+                  <TaskPreview
+                    key={task.id}
+                    task={task}
+                    evaluationCount={evaluationCounts.get(task.id) ?? 0}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="p-6 text-sm text-muted-foreground">
+                No research tasks are associated with this dataset yet.
+              </p>
+            )}
           </CardContent>
         </Card>
       </main>
