@@ -5,7 +5,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Reproduce approval-rate estimates from the frozen loan-application records and compare them across independently chosen market, product, and applicant groupings.",
-        "diffuculty": "low"
+        "difficulty": "low"
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Where Mortgage Applications Succeed",
@@ -17,7 +17,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Recompute denial-reason frequencies and adjusted associations, then test whether the ordering survives alternative treatments of missing, multiple, and inapplicable reasons.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Why Mortgage Applications Are Denied",
@@ -29,7 +29,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Have mortgage-lending experts score the lender assessment against an evidence rubric, inspect counterexamples, and compare conclusions under competing definitions of community service.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Lenders Serving Their Communities",
@@ -41,7 +41,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Independently reconstruct the comparison cohorts and adjusted models, audit overlap and missingness, and verify that reported gaps are robust to reasonable product and geography definitions.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Comparable Applicants and Unequal Outcomes",
@@ -53,7 +53,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Ask independent domain reviewers to assess the underserved-market ranking, proxy choices, alternative explanations, and actionability; test whether recommendations persist under different normative priorities.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "hmda-mortgage-2024-one-year",
       "name": "Finding Underserved Mortgage Markets",
@@ -65,7 +65,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Reproduce rating summaries from linked title and ratings records and check whether conclusions survive vote thresholds, title-type splits, and weighted versus unweighted estimates.",
-        "diffuculty": "low"
+        "difficulty": "low"
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Titles Audiences Rate Highly",
@@ -77,7 +77,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Rebuild episode and season trajectories, audit missing episodes and vote coverage, and compare results under several pre-registered definitions of declining enthusiasm.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "When Series Lose Momentum",
@@ -89,7 +89,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Independently count regional and language aliases, sample-check title linkage, and test rankings under alternative definitions of cross-market reach and minimum title prominence.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Stories That Cross Borders",
@@ -101,7 +101,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Have film-domain reviewers judge the proposed breakthrough narratives against full career timelines, rejected alternatives, and counterexamples; measure agreement across reviewers.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Recognizing a Career Breakthrough",
@@ -113,7 +113,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Audit the collaboration graph and then ask independent experts to assess whether the chosen influence concept, role scope, and case interpretations are defensible under competing network definitions.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "imdb-non-commercial-datasets",
       "name": "Influential Creative Collaborators",
@@ -125,7 +125,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Recompute tip rates for eligible trip and payment types, audit zero and missing tips, and compare patterns across time, route, distance, and fare bands.",
-        "diffuculty": "low"
+        "difficulty": "low"
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "When Riders Tip More",
@@ -137,7 +137,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Recreate route-level time and price baselines, validate zone joins and trip filters, and confirm flagged routes under robust outlier definitions and comparable trip conditions.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "Unexpectedly Slow or Expensive Routes",
@@ -149,7 +149,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Independently rerun temporal, geographic, and arithmetic anomaly rules, manually inspect stratified samples, and report precision estimates for each anomaly class.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "Suspicious Trip Records",
@@ -161,7 +161,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Have transportation experts review the inferred supply-demand gaps, compare plausible proxy definitions, inspect contradictory zones and hours, and judge whether proposed interpretations exceed the available evidence.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "Where Ride Availability Falls Short",
@@ -173,7 +173,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Evaluate the service assessment with an expert rubric covering accessibility, shared-ride matching, wait-time proxies, geographic equity, missing counterfactuals, and alternative interpretations.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "nyc-tlc-trip-records-2026-04",
       "name": "How Well Specialized Ride Options Work",
@@ -185,7 +185,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Reproduce late-delivery rates after auditing order status, timestamp consistency, missing delivery dates, and the definition of lateness; sample-check extreme cases.",
-        "diffuculty": "low"
+        "difficulty": "low"
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Orders That Arrive Late",
@@ -197,7 +197,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Rebuild order-level features without join inflation, reproduce review comparisons, and check stability across product, seller, geography, price, and delivery-time controls.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "What Leads to Better Reviews",
@@ -209,7 +209,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Independently reconcile item prices, freight, payments, and order multiplicity, then verify high-burden segments under alternative denominators and treatment of multi-item orders.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Why Shipping Feels Expensive",
@@ -221,7 +221,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Have marketplace-operations reviewers assess the seller scorecard, inspect borderline sellers, and test whether conclusions persist across reasonable metric weights, minimum-volume rules, and uncertainty adjustments.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Sellers Customers Can Rely On",
@@ -233,7 +233,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Use independent expert scoring of the opportunity rationale, rejected alternatives, operational constraints, proxy validity, and sensitivity to competing growth priorities.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "olist-brazilian-ecommerce",
       "name": "Promising Marketplace Expansion",
@@ -245,7 +245,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Reconstruct statement totals from numeric facts and presentation relationships, check units and contexts, and compare every flagged inconsistency with the relevant calculation relationships.",
-        "diffuculty": "low"
+        "difficulty": "low"
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Financial Statements That Do Not Add Up",
@@ -257,7 +257,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Independently map revenue and profitability tags, align fiscal contexts and units, reproduce changes, and verify conclusions under conservative and expansive tag mappings.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Companies Improving Profitability",
@@ -269,7 +269,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Have financial analysts code a sample of narrative disclosures, review the theme synthesis and omitted risks, and measure whether independent reviewers reach similar interpretations.",
-        "diffuculty": "medium"
+        "difficulty": "medium"
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Risks Companies Are Emphasizing",
@@ -281,7 +281,7 @@
       "metadata": {
         "verifiable": true,
         "verificationMethod": "Audit taxonomy mappings, units, periods, dimensions, custom tags, and company selection; reproduce comparability scores and test them against expert-reviewed fact pairs.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Comparing Revenue Across Filers",
@@ -293,7 +293,7 @@
       "metadata": {
         "verifiable": false,
         "verificationMethod": "Ask independent analysts to assess the resilience ranking, trace every claim to filing evidence, challenge the metric and peer choices, and score the quality of competing interpretations.",
-        "diffuculty": "high"
+        "difficulty": "high"
       },
       "dataset": "sec-financial-statement-and-notes-2026",
       "name": "Financially Resilient Companies",

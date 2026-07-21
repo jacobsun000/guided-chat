@@ -7,7 +7,8 @@
     "build": "next build",
     "db:push": "drizzle-kit push",
     "start": "next start",
-    "test": "node --no-warnings --experimental-strip-types --test src/lib/dependency-map.test.mts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint"
   },
   "dependencies": {
@@ -37,6 +38,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -44,7 +47,9 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto"
-import { readFile } from "node:fs/promises"
-import { dirname, join } from "node:path"
 
 import { compile } from "tailwindcss"
+import { TAILWIND_STYLESHEETS } from "@/features/html-output/server/tailwind-stylesheets"
 
 type TailwindRequestBody = {
   source?: unknown
@@ -10,11 +9,8 @@ type TailwindRequestBody = {
 
 const MAX_SOURCE_LENGTH = 120_000
 const cssCache = new Map<string, string>()
-const tailwindCssBase = join(
-  /* turbopackIgnore: true */ process.cwd(),
-  "node_modules",
-  "tailwindcss"
-)
+const MAX_CACHE_ENTRIES = 100
+const tailwindCssBase = "/tailwindcss"
 
 const APP_THEME_CSS = `
 @theme inline {
@@ -167,26 +163,13 @@ function extractCandidates(source: string) {
 }
 
 async function loadTailwindStylesheet(id: string) {
-  let path: string
-
-  switch (id) {
-    case "tailwindcss/theme.css":
-      path = join(tailwindCssBase, "theme.css")
-      break
-    case "tailwindcss/preflight.css":
-      path = join(tailwindCssBase, "preflight.css")
-      break
-    case "tailwindcss/utilities.css":
-      path = join(tailwindCssBase, "utilities.css")
-      break
-    default:
-      throw new Error(`Unsupported Tailwind stylesheet: ${id}`)
-  }
+  const content = TAILWIND_STYLESHEETS[id]
+  if (!content) throw new Error(`Unsupported Tailwind stylesheet: ${id}`)
 
   return {
-    path,
-    base: dirname(path),
-    content: await readFile(path, "utf8"),
+    path: `${tailwindCssBase}/${id.split("/").at(-1)}`,
+    base: tailwindCssBase,
+    content,
   }
 }
 
@@ -222,6 +205,10 @@ export async function POST(request: Request) {
     const css = compiler.build(extractCandidates(body.source))
 
     cssCache.set(hash, css)
+    if (cssCache.size > MAX_CACHE_ENTRIES) {
+      const oldest = cssCache.keys().next().value
+      if (oldest) cssCache.delete(oldest)
+    }
 
     return Response.json({ css, hash })
   } catch (error) {

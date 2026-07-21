@@ -9,7 +9,7 @@ export type ResearchTask = {
   metadata: {
     verifiable: boolean
     verificationMethod: string
-    diffuculty: TaskDifficulty
+    difficulty: TaskDifficulty
   }
   dataset: string
   name: string

@@ -90,7 +90,7 @@ export default async function TaskPage({ params }: TaskPageProps) {
             </CardHeader>
             <CardContent>
               <Badge variant="secondary" className="capitalize">
-                {task.metadata.diffuculty}
+                {task.metadata.difficulty}
               </Badge>
             </CardContent>
           </Card>

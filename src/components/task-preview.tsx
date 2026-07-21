@@ -26,7 +26,7 @@ export function TaskPreview({ task, evaluationCount }: TaskPreviewProps) {
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className="capitalize">
-            {task.metadata.diffuculty}
+            {task.metadata.difficulty}
           </Badge>
           <Badge variant="outline">
             {task.metadata.verifiable ? (

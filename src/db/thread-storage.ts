@@ -25,7 +25,7 @@ type PersistedSettings = Partial<ChatSettings> & {
   dependencyMapStates?: ChatThread["dependencyMapStates"]
 }
 
-function normalizeSettings(settings: PersistedSettings): ChatSettings {
+export function normalizeSettings(settings: PersistedSettings): ChatSettings {
   const { dependencyMapStates, ...chatSettings } = settings
   void dependencyMapStates
 
@@ -39,7 +39,7 @@ function normalizeSettings(settings: PersistedSettings): ChatSettings {
   }
 }
 
-function normalizeThread(thread: ChatThread): ChatThread {
+export function normalizeThread(thread: ChatThread): ChatThread {
   const settings = (thread.settings ?? {}) as PersistedSettings
   const persistedMapStates =
     thread.dependencyMapStates ?? settings.dependencyMapStates
@@ -148,3 +148,4 @@ export function saveThreadsStore(store: ThreadsStore): ThreadsStore {
 
   return normalizedStore
 }
+import "server-only"
