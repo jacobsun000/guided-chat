@@ -22,6 +22,8 @@ import {
   RefreshCwIcon,
   SendIcon,
   XIcon,
+  TerminalIcon,
+  FilePenLineIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -236,6 +238,10 @@ type DependencyMapPart = Extract<
   ResearchAssistantMessage["parts"][number],
   { type: "tool-output_dependency_map" }
 >
+type SandboxToolPart = Extract<
+  ResearchAssistantMessage["parts"][number],
+  { type: "tool-exec" | "tool-apply_patch" }
+>
 
 type DependencyNodeRequest = DependencyMapGraphNodeRequest
 
@@ -311,7 +317,8 @@ function isVisibleAssistantPart(part: ResearchAssistantMessage["parts"][number])
     (part.type === "tool-ask_user_questions" &&
       (part.state === "output-available" || part.state === "output-error")) ||
     (part.type === "tool-output_dependency_map" &&
-      (part.state === "output-available" || part.state === "output-error"))
+      (part.state === "output-available" || part.state === "output-error")) ||
+    part.type === "tool-exec" || part.type === "tool-apply_patch"
   )
 }
 
@@ -630,7 +637,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(store),
+        body: JSON.stringify({ accessToken: accessToken.trim(), store }),
       })
         .then((response) => {
           if (!response.ok) {
@@ -644,7 +651,7 @@ export default function Home() {
     }, 250)
 
     return () => window.clearTimeout(timeoutId)
-  }, [loaded, store])
+  }, [accessToken, loaded, store])
 
   React.useEffect(() => {
     const thread = store.threads.find(
@@ -669,6 +676,7 @@ export default function Home() {
     const settings = activeThread.settings
     return {
       accessToken: accessToken.trim(),
+      threadId: activeThread.id,
       agentConfig: {
         provider: settings.provider,
         model: settings.model,
@@ -765,6 +773,7 @@ export default function Home() {
 
   const deleteThread = React.useCallback(
     (id: string) => {
+      if (!window.confirm("Delete this thread? Files in its sandbox workspace will be permanently deleted.")) return
       if (isStreaming && id === activeThread.id) {
         stop()
       }
@@ -1390,6 +1399,10 @@ function MessageBubble({
                   )
                 }
 
+                if (part.type === "tool-exec" || part.type === "tool-apply_patch") {
+                  return <SandboxToolCard key={part.toolCallId} part={part} />
+                }
+
                 return (
                   <AnsweredQuestionsTranscript key={part.toolCallId} part={part} />
                 )
@@ -1415,6 +1428,38 @@ function MessageBubble({
         </div>
       </div>
     </article>
+  )
+}
+
+function SandboxToolCard({ part }: { part: SandboxToolPart }) {
+  const running = part.state === "input-streaming" || part.state === "input-available"
+  const failed = part.state === "output-error"
+  const output = part.state === "output-available" ? part.output : undefined
+  const input = "input" in part ? part.input : undefined
+  const isExec = part.type === "tool-exec"
+  const execInput = isExec ? input as { cmd?: string; workdir?: string; timeoutMs?: number } | undefined : undefined
+  const patchInput = !isExec ? input as { patch?: string } | undefined : undefined
+  const command = execInput?.cmd
+  const patch = patchInput?.patch
+  const files = patch ? [...patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$|^\*\*\* Move to: (.+)$/gm)].map((match) => match[1] ?? match[2]) : []
+  return (
+    <div className="rounded-md border bg-muted/30 text-xs">
+      <div className="flex items-center gap-2 px-3 py-2">
+        {running ? <Spinner /> : isExec ? <TerminalIcon className="size-3.5" /> : <FilePenLineIcon className="size-3.5" />}
+        <span className="font-medium">{isExec ? "exec" : "apply_patch"}</span>
+        <Badge variant={failed || (output && output.exitCode !== 0) ? "destructive" : "secondary"}>
+          {running ? "running" : failed ? "error" : output?.timedOut ? "timed out" : output?.exitCode === 0 ? "success" : "failed"}
+        </Badge>
+        {output && <span className="text-muted-foreground">exit {output.exitCode} · {(output.durationMs / 1000).toFixed(2)}s{output.truncated ? " · truncated" : ""}</span>}
+      </div>
+      <div className="truncate border-t px-3 py-2 font-mono text-muted-foreground">
+        {isExec ? `${execInput?.workdir ?? "/workspace"} · ${execInput?.timeoutMs ?? 120000}ms · ${command ?? ""}` : files.join(", ") || "Patch"}
+      </div>
+      {failed && <pre className="overflow-auto whitespace-pre-wrap border-t px-3 py-2 text-destructive">{part.errorText}</pre>}
+      {output?.stdout && <details className="border-t"><summary className="cursor-pointer px-3 py-2">stdout</summary><pre className="max-h-64 overflow-auto whitespace-pre-wrap px-3 pb-3">{output.stdout}</pre></details>}
+      {output?.stderr && <details className="border-t"><summary className="cursor-pointer px-3 py-2">stderr</summary><pre className="max-h-64 overflow-auto whitespace-pre-wrap px-3 pb-3 text-destructive">{output.stderr}</pre></details>}
+      {(command || patch) && <details className="border-t"><summary className="cursor-pointer px-3 py-2">Full input</summary><pre className="max-h-64 overflow-auto whitespace-pre-wrap px-3 pb-3">{command ?? patch}</pre></details>}
+    </div>
   )
 }
 

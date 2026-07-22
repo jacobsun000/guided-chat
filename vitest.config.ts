@@ -6,5 +6,5 @@ export default defineConfig({
     "@": fileURLToPath(new URL("./src", import.meta.url)),
     "server-only": fileURLToPath(new URL("./test/server-only.ts", import.meta.url)),
   } },
-  test: { environment: "node", setupFiles: ["./test/setup.ts"] },
+  test: { environment: "node", setupFiles: ["./test/setup.ts"], exclude: ["references/**", "sandbox/**/*.docker.test.ts", "node_modules/**"] },
 })

@@ -7,8 +7,10 @@ import { askUserQuestionsInputSchema, askUserQuestionsOutputSchema } from "@/lib
 import type { AgentEnvironment } from "../provider"
 import { createOutputDependencyMapTool } from "./dependency-map"
 import { createReadImageTool, type NetworkDependencies } from "./read-image"
+import type { SandboxManager } from "../sandbox/types"
+import { createSandboxTools } from "./sandbox"
 
-export function createAgentTools(env: AgentEnvironment = process.env, network?: NetworkDependencies) {
+export function createAgentTools(env: AgentEnvironment = process.env, network?: NetworkDependencies, sandbox?: { manager: SandboxManager; threadId: string; abortSignal?: AbortSignal }) {
   const tools: ToolSet = {
     ask_user_questions: tool({
       description: "Ask targeted questions needed to continue productively.",
@@ -18,8 +20,8 @@ export function createAgentTools(env: AgentEnvironment = process.env, network?: 
     read_image: createReadImageTool(network),
     output_dependency_map: createOutputDependencyMapTool(),
   }
+  if (sandbox) Object.assign(tools, createSandboxTools(sandbox.manager, sandbox.threadId, sandbox.abortSignal))
   const tavilyApiKey = env.TAVILY_API_KEY?.trim()
   if (tavilyApiKey) tools.web_search = tavilySearch({ apiKey: tavilyApiKey })
   return tools
 }
-

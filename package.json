@@ -9,7 +9,9 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sandbox:build": "docker build -t guided-chat-sandbox:local sandbox",
+    "test:sandbox": "vitest run --config vitest.sandbox.config.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.85",
@@ -22,6 +24,7 @@
     "better-sqlite3": "^12.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dockerode": "^5.0.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
@@ -41,6 +44,7 @@
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/dockerode": "^4.0.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

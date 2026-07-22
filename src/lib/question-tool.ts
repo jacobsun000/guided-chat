@@ -70,6 +70,14 @@ export type ReadImageOutput = {
 }
 
 export type ResearchAssistantTools = {
+  exec: {
+    input: { cmd: string; workdir?: string; timeoutMs?: number }
+    output: { exitCode: number; stdout: string; stderr: string; truncated: boolean; timedOut: boolean; durationMs: number }
+  }
+  apply_patch: {
+    input: { patch: string }
+    output: { exitCode: number; stdout: string; stderr: string; truncated: boolean; timedOut: boolean; durationMs: number; changedFiles: string[] }
+  }
   ask_user_questions: {
     input: AskUserQuestionsInput
     output: AskUserQuestionsOutput

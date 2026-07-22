@@ -8,6 +8,7 @@ import { agentModelConfigSchema } from "../schemas"
 
 const chatRequestSchema = z.object({
   accessToken: z.string(),
+  threadId: z.string().min(1).max(512),
   agentConfig: agentModelConfigSchema,
   messages: z.array(z.unknown()),
 })
@@ -24,7 +25,7 @@ export function createChatPost(service: ResearchAgentService) {
     if (verification === "not-configured") return jsonError("SERVER_MISCONFIGURED", "Server access token is not configured.", 500)
     if (verification === "invalid") return jsonError("UNAUTHORIZED", "Invalid access token.", 401)
     try {
-      return await service.stream({ agentConfig: parsed.data.agentConfig, messages: parsed.data.messages, abortSignal: request.signal })
+      return await service.stream({ threadId: parsed.data.threadId, agentConfig: parsed.data.agentConfig, messages: parsed.data.messages, abortSignal: request.signal })
     } catch {
       return jsonError("INTERNAL_ERROR", "Unable to start chat request.", 500)
     }
