@@ -11,15 +11,13 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
   AlertCircleIcon,
-  AlertTriangleIcon,
   BotIcon,
   CheckIcon,
   CopyIcon,
-  GitBranchIcon,
   KeyRoundIcon,
   Loader2Icon,
-  MapIcon,
   RefreshCwIcon,
+  RouteIcon,
   SendIcon,
   XIcon,
   TerminalIcon,
@@ -83,10 +81,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { useTheme, type Theme } from "@/components/theme-provider"
-import {
-  DependencyMapGraph,
-  type DependencyMapGraphNodeRequest,
-} from "@/components/dependency-map-graph"
+import { ResearchMetroMap } from "@/components/research-metro-map"
 import {
   DEFAULT_PROVIDER_OPTIONS,
   createDefaultSettings,
@@ -103,20 +98,15 @@ import type {
   ResearchAssistantMessage,
 } from "@/lib/question-tool"
 import {
-  calculateNodeStates,
-  flagNode,
-  getAvailableNodeIds,
-  markNodeUnderstood,
-  markNodeVisited,
-  normalizeUserMapState,
-  type DependencyMap,
-  type DependencyNode,
-  type OutputDependencyMapInput,
-  type OutputDependencyMapResult,
-  type UserMapState,
-} from "@/lib/dependency-map"
+  researchPlanSchema,
+  type ResearchPlanStep,
+  type UpdateResearchPlanResult,
+} from "@/lib/research-plan"
 import { cn } from "@/lib/utils"
-import type { ResearchMessageMetadata } from "@/agent/messages"
+import {
+  researchMessageMetadataSchema,
+  type ResearchMessageMetadata,
+} from "@/agent/messages"
 
 const ACCESS_TOKEN_STORAGE_KEY = "guided-chat.access-token.v1"
 const THREADS_STORAGE_KEY = "guided-chat.threads.v1"
@@ -126,14 +116,21 @@ const PROVIDERS: Record<
   {
     label: string
     defaultModel: string
+    defaultThinkingEffort: string
     models: { label: string; value: string; description: string }[]
     thinkingEffortOptions: { label: string; value: string; description: string }[]
   }
 > = {
   openai: {
     label: "OpenAI",
-    defaultModel: "gpt-5.5",
+    defaultModel: "gpt-5.6-sol",
+    defaultThinkingEffort: "xhigh",
     models: [
+      {
+        label: "GPT-5.6 Sol",
+        value: "gpt-5.6-sol",
+        description: "Deep research",
+      },
       {
         label: "GPT-5.5",
         value: "gpt-5.5",
@@ -163,6 +160,7 @@ const PROVIDERS: Record<
   anthropic: {
     label: "Anthropic",
     defaultModel: "claude-sonnet-4-6",
+    defaultThinkingEffort: "default",
     models: [
       {
         label: "Claude Haiku 4.5",
@@ -192,6 +190,7 @@ const PROVIDERS: Record<
   google: {
     label: "Google",
     defaultModel: "gemini-3.5-flash",
+    defaultThinkingEffort: "default",
     models: [
       {
         label: "Gemini 3.1 Flash-Lite",
@@ -234,16 +233,14 @@ type AskUserQuestionsPart = Extract<
   { type: "tool-ask_user_questions" }
 >
 
-type DependencyMapPart = Extract<
+type UpdatePlanPart = Extract<
   ResearchAssistantMessage["parts"][number],
-  { type: "tool-output_dependency_map" }
+  { type: "tool-update_plan" }
 >
 type SandboxToolPart = Extract<
   ResearchAssistantMessage["parts"][number],
   { type: "tool-exec" | "tool-apply_patch" }
 >
-
-type DependencyNodeRequest = DependencyMapGraphNodeRequest
 
 function createHydrationStore(): ThreadsStore {
   const thread = createThread({
@@ -288,6 +285,54 @@ function getPendingQuestionPart(messages: ResearchAssistantMessage[]) {
   return null
 }
 
+function getLatestResearchPlan(messages: ResearchAssistantMessage[]) {
+  for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
+    const message = messages[messageIndex]
+
+    if (message.role !== "assistant") continue
+
+    for (let partIndex = message.parts.length - 1; partIndex >= 0; partIndex -= 1) {
+      const part = message.parts[partIndex]
+      if (part.type !== "tool-update_plan" || !("input" in part)) continue
+
+      const parsed = researchPlanSchema.safeParse(part.input)
+      if (parsed.success) return parsed.data
+    }
+  }
+
+  return null
+}
+
+function getResearchStepProgress(messages: ResearchAssistantMessage[]) {
+  const visitedStepNames = new Set<string>()
+  let currentStepName: string | undefined
+
+  for (const message of messages) {
+    if (message.role !== "user") continue
+
+    const parsed = researchMessageMetadataSchema.safeParse(message.metadata)
+    const action = parsed.success ? parsed.data?.action : undefined
+    if (!action) continue
+
+    visitedStepNames.add(action.stepName)
+    currentStepName = action.stepName
+  }
+
+  return { currentStepName, visitedStepNames }
+}
+
+function isResearchPlanUpdating(messages: ResearchAssistantMessage[]) {
+  const message = messages.at(-1)
+  if (!message || message.role !== "assistant") return false
+
+  return message.parts.some(
+    (part) =>
+      part.type === "tool-update_plan" &&
+      part.state !== "output-available" &&
+      part.state !== "output-error"
+  )
+}
+
 function shouldSendAutomaticallyAfterToolCalls({
   messages,
 }: {
@@ -308,7 +353,7 @@ function shouldSendAutomaticallyAfterToolCalls({
   }, -1)
   const lastStepParts = message.parts.slice(lastStepStartIndex + 1)
 
-  return !lastStepParts.some((part) => part.type === "tool-output_dependency_map")
+  return !lastStepParts.some((part) => part.type === "tool-update_plan")
 }
 
 function isVisibleAssistantPart(part: ResearchAssistantMessage["parts"][number]) {
@@ -316,7 +361,7 @@ function isVisibleAssistantPart(part: ResearchAssistantMessage["parts"][number])
     part.type === "text" ||
     (part.type === "tool-ask_user_questions" &&
       (part.state === "output-available" || part.state === "output-error")) ||
-    (part.type === "tool-output_dependency_map" &&
+    (part.type === "tool-update_plan" &&
       (part.state === "output-available" || part.state === "output-error")) ||
     part.type === "tool-exec" || part.type === "tool-apply_patch"
   )
@@ -373,20 +418,13 @@ async function copyTextToClipboard(text: string) {
 }
 
 function normalizeStoredThread(thread: ChatThread): ChatThread {
-  const storedSettings: Partial<ChatSettings> & {
-    system?: string
-    dependencyMapStates?: ChatThread["dependencyMapStates"]
-  } = {
-    ...thread.settings,
-  }
-  const persistedMapStates =
-    thread.dependencyMapStates ?? storedSettings.dependencyMapStates
-  delete storedSettings.system
-  delete storedSettings.dependencyMapStates
-
+  const storedSettings = (thread.settings ?? {}) as Partial<ChatSettings>
+  const defaultSettings = createDefaultSettings()
   const settings = {
-    ...createDefaultSettings(),
-    ...storedSettings,
+    provider: storedSettings.provider ?? defaultSettings.provider,
+    model: storedSettings.model ?? defaultSettings.model,
+    thinkingEffort:
+      storedSettings.thinkingEffort ?? defaultSettings.thinkingEffort,
     providerOptions: {
       ...DEFAULT_PROVIDER_OPTIONS,
       ...storedSettings.providerOptions,
@@ -396,10 +434,6 @@ function normalizeStoredThread(thread: ChatThread): ChatThread {
   return {
     ...thread,
     settings,
-    dependencyMapStates:
-      persistedMapStates && typeof persistedMapStates === "object"
-        ? persistedMapStates
-        : {},
     messages: Array.isArray(thread.messages) ? thread.messages : [],
   }
 }
@@ -560,6 +594,18 @@ export default function Home() {
   const hasAccessToken = Boolean(accessToken.trim())
   const selectedModelMeta = selectedProviderMeta.models.find(
     (model) => model.value === activeThread?.settings.model
+  )
+  const researchPlan = React.useMemo(
+    () => getLatestResearchPlan(messages),
+    [messages]
+  )
+  const researchStepProgress = React.useMemo(
+    () => getResearchStepProgress(messages),
+    [messages]
+  )
+  const researchPlanUpdating = React.useMemo(
+    () => isResearchPlanUpdating(messages),
+    [messages]
   )
 
   React.useLayoutEffect(() => {
@@ -738,7 +784,7 @@ export default function Home() {
           ...thread.settings,
           provider,
           model: PROVIDERS[provider].defaultModel,
-          thinkingEffort: "default",
+          thinkingEffort: PROVIDERS[provider].defaultThinkingEffort,
         },
       }))
     },
@@ -934,36 +980,8 @@ export default function Home() {
     [addToolOutput, clearError, createChatRequest, hasAccessToken]
   )
 
-  const getDependencyMapState = React.useCallback(
-    (map: DependencyMap) =>
-      normalizeUserMapState(activeThread.dependencyMapStates?.[map.map_id], map.map_id),
-    [activeThread.dependencyMapStates]
-  )
-
-  const updateDependencyMapState = React.useCallback(
-    (mapId: string, updater: (state: UserMapState) => UserMapState) => {
-      updateActiveThread((thread) => {
-        const currentState = normalizeUserMapState(
-          thread.dependencyMapStates?.[mapId],
-          mapId
-        )
-        const nextState = updater(currentState)
-
-        return {
-          ...thread,
-          updatedAt: new Date().toISOString(),
-          dependencyMapStates: {
-            ...(thread.dependencyMapStates ?? {}),
-            [mapId]: nextState,
-          },
-        }
-      })
-    },
-    [updateActiveThread]
-  )
-
-  const inspectDependencyNode = React.useCallback(
-    async ({ map, node, overrideLocked = false }: DependencyNodeRequest) => {
+  const exploreResearchStep = React.useCallback(
+    async (step: ResearchPlanStep) => {
       clearError()
       setComposerError(null)
 
@@ -977,23 +995,15 @@ export default function Home() {
         return
       }
 
-      const currentState = getDependencyMapState(map)
-      const nextState = markNodeVisited(currentState, node.id)
-
-      updateDependencyMapState(map.map_id, () => nextState)
-
       try {
         const requestBody = createChatRequest()
         await sendMessage(
           {
-            text: `Inspect “${node.label}”.`,
+            text: `Explore “${step.name}” next.`,
             metadata: {
               action: {
-                type: "inspect_dependency_node",
-                mapId: map.map_id,
-                nodeId: node.id,
-                state: nextState,
-                overrideLocked,
+                type: "explore_research_step",
+                stepName: step.name,
               },
             } satisfies ResearchMessageMetadata,
           },
@@ -1003,7 +1013,7 @@ export default function Home() {
         )
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Unable to inspect the node."
+          err instanceof Error ? err.message : "Unable to explore the step."
         setComposerError(message)
         if (message.includes("Provider options")) {
           setProviderOptionsError(message)
@@ -1014,31 +1024,11 @@ export default function Home() {
     [
       clearError,
       createChatRequest,
-      getDependencyMapState,
       hasAccessToken,
       hasPendingQuestion,
       isStreaming,
       sendMessage,
-      updateDependencyMapState,
     ]
-  )
-
-  const markDependencyNodeUnderstood = React.useCallback(
-    (map: DependencyMap, node: DependencyNode) => {
-      updateDependencyMapState(map.map_id, (state) =>
-        markNodeUnderstood(state, node.id)
-      )
-      toast.success(`Marked "${node.label}" understood`)
-    },
-    [updateDependencyMapState]
-  )
-
-  const flagDependencyNode = React.useCallback(
-    (map: DependencyMap, node: DependencyNode) => {
-      updateDependencyMapState(map.map_id, (state) => flagNode(state, node.id))
-      toast.success(`Flagged "${node.label}"`)
-    },
-    [updateDependencyMapState]
   )
 
   const copyMessage = React.useCallback(async (message: UIMessage) => {
@@ -1129,139 +1119,149 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <ScrollArea className="min-h-0 flex-1 overflow-hidden">
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6">
-              {!messages.length && (
-                <Empty className="min-h-[55svh] border">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <BotIcon />
-                    </EmptyMedia>
-                    <EmptyTitle>Start a conversation</EmptyTitle>
-                    <EmptyDescription>
-                      Messages are saved to the shared workspace. Provider API
-                      keys are configured on the backend.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <Button variant="outline" onClick={() => setSettingsOpen(true)}>
-                      <KeyRoundIcon data-icon="inline-start" />
-                      Open settings
-                    </Button>
-                  </EmptyContent>
-                </Empty>
-              )}
-
-              {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  dependencyMapStates={activeThread.dependencyMapStates ?? {}}
-                  disabled={isStreaming || hasPendingQuestion}
-                  onCopy={() => copyMessage(message)}
-                  onInspectDependencyNode={inspectDependencyNode}
-                  onMarkDependencyNodeUnderstood={markDependencyNodeUnderstood}
-                  onFlagDependencyNode={flagDependencyNode}
-                />
-              ))}
-
-              {status === "submitted" && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2Icon className="animate-spin" />
-                  Waiting for the model
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-
-          {!isStreaming && (
-            <div className="border-t bg-background px-3 py-3">
-              <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
-                {(composerError || error || !hasAccessToken) && (
-                  <Alert variant={composerError || error ? "destructive" : "default"}>
-                    <AlertCircleIcon />
-                    <AlertTitle>
-                      {composerError || error
-                        ? "Chat request blocked"
-                        : "Missing access token"}
-                    </AlertTitle>
-                    <AlertDescription>
-                      {composerError ??
-                        error?.message ??
-                        "Enter the workspace access token in settings before sending."}
-                    </AlertDescription>
-                  </Alert>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <ScrollArea className="min-h-0 flex-1 overflow-hidden">
+              <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6">
+                {!messages.length && (
+                  <Empty className="min-h-[55svh] border">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <BotIcon />
+                      </EmptyMedia>
+                      <EmptyTitle>Start a conversation</EmptyTitle>
+                      <EmptyDescription>
+                        Messages are saved to the shared workspace. Provider API
+                        keys are configured on the backend.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+                        <KeyRoundIcon data-icon="inline-start" />
+                        Open settings
+                      </Button>
+                    </EmptyContent>
+                  </Empty>
                 )}
 
-                {pendingQuestionPart && (
-                  <AskUserQuestionsPanel
-                    key={pendingQuestionPart.toolCallId}
-                    part={pendingQuestionPart}
-                    disabled={false}
-                    onSubmit={submitQuestionAnswers}
+                {messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onCopy={() => copyMessage(message)}
                   />
-                )}
+                ))}
 
-                {!pendingQuestionPart && (
-                  <form onSubmit={submit}>
-                    <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
-                      <InputGroupTextarea
-                        ref={composerTextareaRef}
-                        value={input}
-                        onChange={(event) => setInput(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" && !event.shiftKey) {
-                            event.preventDefault()
-                            event.currentTarget.form?.requestSubmit()
-                          }
-                        }}
-                        placeholder={
-                          hasPendingQuestion
-                            ? "Answer the questions above..."
-                            : "Message..."
-                        }
-                        rows={1}
-                        disabled={isStreaming || hasPendingQuestion}
-                        className="max-h-48 min-h-8 py-1.5"
-                      />
-                      <div className="flex shrink-0 items-center gap-1 pb-0.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <InputGroupButton
-                              size="icon-sm"
-                              onClick={regenerateLast}
-                              disabled={
-                                !messages.length || isStreaming || hasPendingQuestion
-                              }
-                            >
-                              <RefreshCwIcon />
-                              <span className="sr-only">Regenerate</span>
-                            </InputGroupButton>
-                          </TooltipTrigger>
-                          <TooltipContent>Regenerate</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <InputGroupButton
-                              type="submit"
-                              size="icon-sm"
-                              variant="default"
-                              disabled={!input.trim() || hasPendingQuestion}
-                            >
-                              <SendIcon />
-                              <span className="sr-only">Send</span>
-                            </InputGroupButton>
-                          </TooltipTrigger>
-                          <TooltipContent>Send</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </InputGroup>
-                  </form>
+                {status === "submitted" && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2Icon className="animate-spin" />
+                    Waiting for the model
+                  </div>
                 )}
               </div>
-            </div>
-          )}
+            </ScrollArea>
+
+            {!isStreaming && (
+              <div className="border-t bg-background px-3 py-3">
+                <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+                  {(composerError || error || !hasAccessToken) && (
+                    <Alert variant={composerError || error ? "destructive" : "default"}>
+                      <AlertCircleIcon />
+                      <AlertTitle>
+                        {composerError || error
+                          ? "Chat request blocked"
+                          : "Missing access token"}
+                      </AlertTitle>
+                      <AlertDescription>
+                        {composerError ??
+                          error?.message ??
+                          "Enter the workspace access token in settings before sending."}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {pendingQuestionPart && (
+                    <AskUserQuestionsPanel
+                      key={pendingQuestionPart.toolCallId}
+                      part={pendingQuestionPart}
+                      disabled={false}
+                      onSubmit={submitQuestionAnswers}
+                    />
+                  )}
+
+                  {!pendingQuestionPart && (
+                    <form onSubmit={submit}>
+                      <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
+                        <InputGroupTextarea
+                          ref={composerTextareaRef}
+                          value={input}
+                          onChange={(event) => setInput(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                              event.preventDefault()
+                              event.currentTarget.form?.requestSubmit()
+                            }
+                          }}
+                          placeholder={
+                            hasPendingQuestion
+                              ? "Answer the questions above..."
+                              : "Message..."
+                          }
+                          rows={1}
+                          disabled={isStreaming || hasPendingQuestion}
+                          className="max-h-48 min-h-8 py-1.5"
+                        />
+                        <div className="flex shrink-0 items-center gap-1 pb-0.5">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <InputGroupButton
+                                size="icon-sm"
+                                onClick={regenerateLast}
+                                disabled={
+                                  !messages.length ||
+                                  isStreaming ||
+                                  hasPendingQuestion
+                                }
+                              >
+                                <RefreshCwIcon />
+                                <span className="sr-only">Regenerate</span>
+                              </InputGroupButton>
+                            </TooltipTrigger>
+                            <TooltipContent>Regenerate</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <InputGroupButton
+                                type="submit"
+                                size="icon-sm"
+                                variant="default"
+                                disabled={!input.trim() || hasPendingQuestion}
+                              >
+                                <SendIcon />
+                                <span className="sr-only">Send</span>
+                              </InputGroupButton>
+                            </TooltipTrigger>
+                            <TooltipContent>Send</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </InputGroup>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <aside className="order-first h-[min(34svh,300px)] shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[380px] lg:border-b-0 lg:border-l xl:w-[420px]">
+            <ResearchMetroMap
+              plan={researchPlan}
+              currentStepName={researchStepProgress.currentStepName}
+              visitedStepNames={researchStepProgress.visitedStepNames}
+              disabled={isStreaming || hasPendingQuestion}
+              isUpdating={researchPlanUpdating}
+              onSelectStep={exploreResearchStep}
+            />
+          </aside>
         </div>
       </SidebarInset>
 
@@ -1325,23 +1325,10 @@ export default function Home() {
 
 function MessageBubble({
   message,
-  dependencyMapStates,
-  disabled,
   onCopy,
-  onInspectDependencyNode,
-  onMarkDependencyNodeUnderstood,
-  onFlagDependencyNode,
 }: {
   message: ResearchAssistantMessage
-  dependencyMapStates: Record<string, UserMapState>
-  disabled: boolean
   onCopy: () => void
-  onInspectDependencyNode: (request: DependencyNodeRequest) => void
-  onMarkDependencyNodeUnderstood: (
-    map: DependencyMap,
-    node: DependencyNode
-  ) => void
-  onFlagDependencyNode: (map: DependencyMap, node: DependencyNode) => void
 }) {
   const isUser = message.role === "user"
   const text = getMessageText(message)
@@ -1385,18 +1372,8 @@ function MessageBubble({
                   )
                 }
 
-                if (part.type === "tool-output_dependency_map") {
-                  return (
-                    <DependencyMapPanel
-                      key={part.toolCallId}
-                      part={part}
-                      stateByMapId={dependencyMapStates}
-                      disabled={disabled}
-                      onInspectNode={onInspectDependencyNode}
-                      onMarkUnderstood={onMarkDependencyNodeUnderstood}
-                      onFlagNode={onFlagDependencyNode}
-                    />
-                  )
+                if (part.type === "tool-update_plan") {
+                  return <PlanUpdateCard key={part.toolCallId} part={part} />
                 }
 
                 if (part.type === "tool-exec" || part.type === "tool-apply_patch") {
@@ -1431,6 +1408,31 @@ function MessageBubble({
   )
 }
 
+function PlanUpdateCard({ part }: { part: UpdatePlanPart }) {
+  if (part.state === "output-error") {
+    return (
+      <Alert variant="destructive">
+        <AlertCircleIcon />
+        <AlertTitle>Research route failed to update</AlertTitle>
+        <AlertDescription>{part.errorText}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (part.state !== "output-available") return null
+
+  const output = part.output as UpdateResearchPlanResult
+
+  return (
+    <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+      <RouteIcon className="size-3.5 text-primary" />
+      <span className="font-medium text-foreground">Research route updated</span>
+      <span>·</span>
+      <span>{output.step_count} stops</span>
+    </div>
+  )
+}
+
 function SandboxToolCard({ part }: { part: SandboxToolPart }) {
   const running = part.state === "input-streaming" || part.state === "input-available"
   const failed = part.state === "output-error"
@@ -1460,197 +1462,6 @@ function SandboxToolCard({ part }: { part: SandboxToolPart }) {
       {output?.stderr && <details className="border-t"><summary className="cursor-pointer px-3 py-2">stderr</summary><pre className="max-h-64 overflow-auto whitespace-pre-wrap px-3 pb-3 text-destructive">{output.stderr}</pre></details>}
       {(command || patch) && <details className="border-t"><summary className="cursor-pointer px-3 py-2">Full input</summary><pre className="max-h-64 overflow-auto whitespace-pre-wrap px-3 pb-3">{command ?? patch}</pre></details>}
     </div>
-  )
-}
-
-function DependencyMapPanel({
-  part,
-  stateByMapId,
-  disabled,
-  onInspectNode,
-  onMarkUnderstood,
-  onFlagNode,
-}: {
-  part: DependencyMapPart
-  stateByMapId: Record<string, UserMapState>
-  disabled: boolean
-  onInspectNode: (request: DependencyNodeRequest) => void
-  onMarkUnderstood: (map: DependencyMap, node: DependencyNode) => void
-  onFlagNode: (map: DependencyMap, node: DependencyNode) => void
-}) {
-  if (part.state === "output-error") {
-    return (
-      <Alert variant="destructive">
-        <AlertCircleIcon />
-        <AlertTitle>Dependency map failed</AlertTitle>
-        <AlertDescription>{part.errorText}</AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (part.state !== "output-available") {
-    return null
-  }
-
-  const input = part.input as OutputDependencyMapInput
-  const output = part.output as OutputDependencyMapResult
-  const map = input.dependency_map
-  const userState = normalizeUserMapState(
-    stateByMapId[map.map_id],
-    map.map_id
-  )
-  const nodeStates = calculateNodeStates(map, userState)
-  const availableNodeIds = getAvailableNodeIds(map, userState)
-  const availableNodeIdSet = new Set(availableNodeIds)
-  const recommendedNodes = map.recommended_first_node_ids
-    .filter((nodeId) => availableNodeIdSet.has(nodeId))
-    .map((nodeId) => map.nodes.find((node) => node.id === nodeId))
-    .filter((node): node is DependencyNode => Boolean(node))
-  const startingNodes =
-    recommendedNodes.length > 0
-      ? recommendedNodes
-      : availableNodeIds
-          .slice(0, 3)
-          .map((nodeId) => map.nodes.find((node) => node.id === nodeId))
-          .filter((node): node is DependencyNode => Boolean(node))
-  const finalNode = map.nodes.find((node) => node.id === map.final_node_id)
-  const warnings = output.validation_warnings ?? []
-
-  return (
-    <section className="border bg-card text-card-foreground shadow-sm">
-      <div className="border-b px-3 py-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <MapIcon className="size-4 text-primary" />
-              <h2 className="text-sm font-semibold">Dependency Map</h2>
-              <Badge variant="outline">{map.nodes.length} nodes</Badge>
-              <Badge variant="outline">{map.edges.length} edges</Badge>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {map.research_question}
-            </p>
-          </div>
-          {finalNode && (
-            <Button
-              size="sm"
-              variant={
-                nodeStates[finalNode.id] === "locked" ? "outline" : "secondary"
-              }
-              disabled={disabled}
-              onClick={() =>
-                onInspectNode({
-                  map,
-                  node: finalNode,
-                  overrideLocked: nodeStates[finalNode.id] === "locked",
-                })
-              }
-            >
-              <GitBranchIcon data-icon="inline-start" />
-              Final synthesis
-            </Button>
-          )}
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {map.detected_knowledge_gaps.slice(0, 6).map((gap) => (
-            <Badge key={gap} variant="secondary">
-              {gap}
-            </Badge>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-3 p-3">
-        <div className="grid gap-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div className="text-sm font-medium">
-                Start with an available node
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Inspect nodes, mark understood items, and flag weak links before
-                opening synthesis.
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {startingNodes.map((node) => (
-                <Button
-                  key={node.id}
-                  size="sm"
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() => onInspectNode({ map, node })}
-                >
-                  {node.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {warnings.length > 0 && (
-            <Alert>
-              <AlertTriangleIcon />
-              <AlertTitle>Map validation warnings</AlertTitle>
-              <AlertDescription>
-                {warnings.slice(0, 3).join(" ")}
-                {warnings.length > 3 ? ` +${warnings.length - 3} more.` : ""}
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-
-        <DependencyMapGraph
-          map={map}
-          nodeStates={nodeStates}
-          userState={userState}
-          disabled={disabled}
-          onInspectNode={onInspectNode}
-          onMarkUnderstood={onMarkUnderstood}
-          onFlagNode={onFlagNode}
-        />
-
-        <div className="grid gap-2 border-t pt-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <GitBranchIcon className="size-4 text-muted-foreground" />
-            Dependency links
-          </div>
-          <div className="grid gap-1.5 text-xs">
-            {map.edges.map((edge, index) => {
-              const from = map.nodes.find((node) => node.id === edge.from)
-              const to = map.nodes.find((node) => node.id === edge.to)
-
-              return (
-                <div
-                  key={`${edge.from}-${edge.to}-${index}`}
-                  className="grid gap-1 border bg-muted/20 px-2 py-1.5 sm:grid-cols-[1fr_auto_1fr]"
-                >
-                  <span className="font-medium">{from?.label ?? edge.from}</span>
-                  <span className="text-muted-foreground">
-                    {edge.kind.replaceAll("_", " ")} · {edge.strength}
-                  </span>
-                  <span>{to?.label ?? edge.to}</span>
-                  <span className="text-muted-foreground sm:col-span-3">
-                    {edge.rationale}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {map.global_uncertainties.length > 0 && (
-          <div className="border-t pt-3 text-sm">
-            <div className="mb-1 font-medium">Global uncertainties</div>
-            <ul className="grid gap-1 text-muted-foreground">
-              {map.global_uncertainties.map((uncertainty) => (
-                <li key={uncertainty}>{uncertainty}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </section>
   )
 }
 
@@ -1949,7 +1760,7 @@ function SettingsDialog({
     onSettingsChange({
       provider,
       model: PROVIDERS[provider].defaultModel,
-      thinkingEffort: "default",
+      thinkingEffort: PROVIDERS[provider].defaultThinkingEffort,
     })
   }
 

@@ -40,7 +40,7 @@ export class ResearchAgentService {
       instructions: RESEARCH_SYSTEM_PROMPT,
       providerOptions: normalizeProviderOptions(request.agentConfig),
       tools,
-      stopWhen: [hasToolCall("output_dependency_map"), stepCountIs(20)],
+      stopWhen: [hasToolCall("update_plan"), stepCountIs(40)],
     })
     return createAgentUIStreamResponse({
       agent,

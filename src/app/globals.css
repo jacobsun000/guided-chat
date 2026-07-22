@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@xyflow/react/dist/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -131,6 +130,21 @@
 }
 
 @layer components {
+  .metro-map-scroll {
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 55%) transparent;
+    scrollbar-width: thin;
+  }
+
+  .metro-map-track {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: metro-route-draw 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .metro-map-station {
+    animation: metro-station-arrive 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
   .markdown-message {
     @apply max-w-none overflow-hidden break-words leading-6;
   }
@@ -445,5 +459,29 @@
   .markdown-message-user tbody tr:nth-child(even),
   .markdown-message-user .footnotes li:target {
     @apply bg-primary-foreground/10;
+  }
+}
+
+@keyframes metro-route-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes metro-station-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-50% + 8px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metro-map-track,
+  .metro-map-station {
+    animation: none;
   }
 }

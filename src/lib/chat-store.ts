@@ -1,7 +1,5 @@
 import type { UIMessage } from "ai"
 
-import type { UserMapState } from "@/lib/dependency-map"
-
 export type ProviderId = "openai" | "anthropic" | "google"
 
 export type ProviderOptionsJson = Record<ProviderId, string>
@@ -20,7 +18,6 @@ export type ChatThread = {
   updatedAt: string
   messages: UIMessage[]
   settings: ChatSettings
-  dependencyMapStates?: Record<string, UserMapState>
 }
 
 export type ThreadsStore = {
@@ -38,8 +35,8 @@ export const DEFAULT_PROVIDER_OPTIONS: ProviderOptionsJson = {
 export function createDefaultSettings(): ChatSettings {
   return {
     provider: "openai",
-    model: "gpt-5.5",
-    thinkingEffort: "default",
+    model: "gpt-5.6-sol",
+    thinkingEffort: "xhigh",
     providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
   }
 }
@@ -68,7 +65,6 @@ export function createThread({
     updatedAt: now,
     messages: [],
     settings: createDefaultSettings(),
-    dependencyMapStates: {},
   }
 }
 

@@ -21,38 +21,30 @@ function parseJson<T>(value: string, fallback: T): T {
   }
 }
 
-type PersistedSettings = Partial<ChatSettings> & {
-  dependencyMapStates?: ChatThread["dependencyMapStates"]
-}
+type PersistedSettings = Partial<ChatSettings>
 
 export function normalizeSettings(settings: PersistedSettings): ChatSettings {
-  const { dependencyMapStates, ...chatSettings } = settings
-  void dependencyMapStates
+  const defaults = createDefaultSettings()
 
   return {
-    ...createDefaultSettings(),
-    ...chatSettings,
+    provider: settings.provider ?? defaults.provider,
+    model: settings.model ?? defaults.model,
+    thinkingEffort: settings.thinkingEffort ?? defaults.thinkingEffort,
     providerOptions: {
       ...DEFAULT_PROVIDER_OPTIONS,
-      ...chatSettings.providerOptions,
+      ...settings.providerOptions,
     },
   }
 }
 
 export function normalizeThread(thread: ChatThread): ChatThread {
   const settings = (thread.settings ?? {}) as PersistedSettings
-  const persistedMapStates =
-    thread.dependencyMapStates ?? settings.dependencyMapStates
 
   return {
     ...thread,
     title: thread.title || "New chat",
     messages: Array.isArray(thread.messages) ? thread.messages : [],
     settings: normalizeSettings(settings),
-    dependencyMapStates:
-      persistedMapStates && typeof persistedMapStates === "object"
-        ? persistedMapStates
-        : {},
   }
 }
 
@@ -126,10 +118,7 @@ export function saveThreadsStore(store: ThreadsStore): ThreadsStore {
           createdAt: thread.createdAt,
           updatedAt: thread.updatedAt,
           messagesJson: JSON.stringify(thread.messages),
-          settingsJson: JSON.stringify({
-            ...thread.settings,
-            dependencyMapStates: thread.dependencyMapStates ?? {},
-          }),
+          settingsJson: JSON.stringify(thread.settings),
         }))
       )
       .run()

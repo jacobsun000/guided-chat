@@ -12,11 +12,9 @@ export const chatThreadSchema = z.object({
   updatedAt: z.string(),
   messages: z.array(z.unknown()),
   settings: chatSettingsSchema,
-  dependencyMapStates: z.record(z.string(), z.unknown()).optional(),
 })
 export const threadsStoreSchema = z.object({
   version: z.literal(1),
   activeThreadId: z.string().min(1),
   threads: z.array(chatThreadSchema),
 })
-

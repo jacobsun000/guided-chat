@@ -2,9 +2,9 @@ import type { UIMessage } from "ai"
 import { z } from "zod"
 
 import type {
-  OutputDependencyMapInput,
-  OutputDependencyMapResult,
-} from "@/lib/dependency-map"
+  UpdateResearchPlanInput,
+  UpdateResearchPlanResult,
+} from "@/lib/research-plan"
 
 export const askUserQuestionOptionSchema = z.object({
   label: z.string().min(1).describe("User-facing label for this option."),
@@ -86,9 +86,9 @@ export type ResearchAssistantTools = {
     input: ReadImageInput
     output: ReadImageOutput
   }
-  output_dependency_map: {
-    input: OutputDependencyMapInput
-    output: OutputDependencyMapResult
+  update_plan: {
+    input: UpdateResearchPlanInput
+    output: UpdateResearchPlanResult
   }
 }
 

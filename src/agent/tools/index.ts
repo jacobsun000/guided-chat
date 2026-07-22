@@ -5,7 +5,7 @@ import { tool, type ToolSet } from "ai"
 
 import { askUserQuestionsInputSchema, askUserQuestionsOutputSchema } from "@/lib/question-tool"
 import type { AgentEnvironment } from "../provider"
-import { createOutputDependencyMapTool } from "./dependency-map"
+import { createUpdatePlanTool } from "./update-plan"
 import { createReadImageTool, type NetworkDependencies } from "./read-image"
 import type { SandboxManager } from "../sandbox/types"
 import { createSandboxTools } from "./sandbox"
@@ -18,7 +18,7 @@ export function createAgentTools(env: AgentEnvironment = process.env, network?: 
       outputSchema: askUserQuestionsOutputSchema,
     }),
     read_image: createReadImageTool(network),
-    output_dependency_map: createOutputDependencyMapTool(),
+    update_plan: createUpdatePlanTool(),
   }
   if (sandbox) Object.assign(tools, createSandboxTools(sandbox.manager, sandbox.threadId, sandbox.abortSignal))
   const tavilyApiKey = env.TAVILY_API_KEY?.trim()
