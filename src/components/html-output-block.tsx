@@ -3,6 +3,10 @@
 import * as React from "react"
 
 import { useTheme } from "@/components/theme-provider"
+import {
+  CANVAS_THEME_CSS,
+  CANVAS_UI_RUNTIME,
+} from "@/features/html-output/canvas-theme"
 
 const FRAME_WIDTH = 960
 const FRAME_HEIGHT = 540
@@ -114,6 +118,7 @@ function buildSrcDoc(
               ReactDOM: window.ReactDOM,
               Lucide: window.Lucide,
               Recharts: window.Recharts,
+              CanvasUI: window.CanvasUI,
             });
           }
         } catch (error) {
@@ -177,6 +182,8 @@ function buildSrcDoc(
     window.Lucide = Lucide;
     window.Recharts = Recharts;
 
+    ${CANVAS_UI_RUNTIME}
+
     const showError = window.__htmlBlockShowError || console.error;
     const scripts = Array.from(document.querySelectorAll('script[type="text/html-block-jsx"]'));
 
@@ -196,9 +203,10 @@ function buildSrcDoc(
           "ReactDOM",
           "Lucide",
           "Recharts",
+          "CanvasUI",
           "onHtmlBlockReady",
           transformed
-        )(React, window.ReactDOM, Lucide, Recharts, window.onHtmlBlockReady);
+        )(React, window.ReactDOM, Lucide, Recharts, CanvasUI, window.onHtmlBlockReady);
       } catch (error) {
         showError(error);
       }
@@ -212,6 +220,7 @@ function buildSrcDoc(
     <meta name="viewport" content="width=${FRAME_WIDTH}, initial-scale=1" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://esm.sh https://unpkg.com; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'; connect-src 'none'" />
     <style>${escapeStyleContent(frameCss)}</style>
+    <style>${escapeStyleContent(CANVAS_THEME_CSS)}</style>
     <style>${escapeStyleContent(css)}</style>
     <script>${escapeScriptContent(runtime)}</script>
     <script src="https://unpkg.com/@babel/standalone@8.0.2/babel.min.js" crossorigin="anonymous"></script>

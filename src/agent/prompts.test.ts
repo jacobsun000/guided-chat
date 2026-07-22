@@ -25,4 +25,14 @@ describe("RESEARCH_SYSTEM_PROMPT", () => {
       "Do not call update_plan until every applicable stage is complete."
     )
   })
+
+  it("requires the shared canvas component system for HTML slides", () => {
+    expect(RESEARCH_SYSTEM_PROMPT).toContain("`CanvasUI` component kit")
+    expect(RESEARCH_SYSTEM_PROMPT).toContain(
+      "Use static Tailwind classes only for layout"
+    )
+    expect(RESEARCH_SYSTEM_PROMPT).toContain(
+      "do not add a scrollable outer canvas"
+    )
+  })
 })
