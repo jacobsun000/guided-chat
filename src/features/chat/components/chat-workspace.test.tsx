@@ -24,7 +24,7 @@ describe("AssistantActivity", () => {
 
     render(<AssistantActivity parts={parts} streaming />)
 
-    const trigger = screen.getByRole("button", { name: /streaming/i })
+    const trigger = screen.getByRole("button", { name: /thinking/i })
     expect(trigger).toHaveAttribute("aria-expanded", "false")
     expect(screen.queryByText("Reviewing the available sources")).toBeNull()
 

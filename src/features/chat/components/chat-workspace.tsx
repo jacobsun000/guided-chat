@@ -1448,7 +1448,7 @@ export function AssistantActivity({
 }) {
   const [open, setOpen] = React.useState(false)
   const activityParts = parts.filter(isAssistantActivityPart)
-  const label = streaming ? "Streaming" : "Activity"
+  const label = streaming ? "Thinking" : "Activity"
 
   return (
     <div className="min-w-0 text-xs text-muted-foreground">

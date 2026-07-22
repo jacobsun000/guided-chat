@@ -30,6 +30,16 @@ type HtmlBlockHeightMessage = {
   height: number
 }
 
+export function getScaledHtmlOutputHeight(
+  contentHeight: number,
+  renderedWidth: number
+) {
+  return Math.max(
+    MIN_FRAME_HEIGHT,
+    contentHeight * (renderedWidth / FRAME_WIDTH)
+  )
+}
+
 function escapeStyleContent(value: string) {
   return value.replace(/<\/style/gi, "<\\/style")
 }
@@ -218,7 +228,6 @@ export function HtmlOutputBlock({ source }: { source: string }) {
   const { resolvedTheme } = useTheme()
   const blockId = React.useId()
   const [width, setWidth] = React.useState(FRAME_WIDTH)
-  const [availableHeight, setAvailableHeight] = React.useState(FRAME_HEIGHT)
   const [contentHeightState, setContentHeightState] =
     React.useState<ContentHeightState>({
       source: "",
@@ -246,28 +255,6 @@ export function HtmlOutputBlock({ source }: { source: string }) {
     updateWidth()
     const observer = new ResizeObserver(updateWidth)
     observer.observe(target)
-
-    return () => observer.disconnect()
-  }, [])
-
-  React.useEffect(() => {
-    const target = containerRef.current
-
-    if (!target) {
-      return
-    }
-
-    const scrollViewport = target.closest(
-      '[data-slot="scroll-area-viewport"]'
-    ) as HTMLElement | null
-    const observedTarget = scrollViewport ?? target
-    const updateAvailableHeight = () => {
-      setAvailableHeight(Math.max(MIN_FRAME_HEIGHT, observedTarget.clientHeight))
-    }
-
-    updateAvailableHeight()
-    const observer = new ResizeObserver(updateAvailableHeight)
-    observer.observe(observedTarget)
 
     return () => observer.disconnect()
   }, [])
@@ -338,11 +325,8 @@ export function HtmlOutputBlock({ source }: { source: string }) {
     contentHeightState.source === source
       ? contentHeightState.height
       : FRAME_HEIGHT
-  const scaledContentHeight = contentHeight * scale
-  const height = Math.max(
-    MIN_FRAME_HEIGHT,
-    Math.min(scaledContentHeight, availableHeight)
-  )
+  const scaledContentHeight = getScaledHtmlOutputHeight(contentHeight, width)
+  const height = scaledContentHeight
   const css =
     tailwindState.source === source && tailwindState.error === null
       ? tailwindState.css

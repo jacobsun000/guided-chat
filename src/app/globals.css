@@ -263,7 +263,7 @@
   }
 
   .html-output-frame {
-    @apply relative w-full overflow-auto bg-background;
+    @apply relative w-full overflow-hidden bg-background;
   }
 
   .html-output-frame-scaler {
