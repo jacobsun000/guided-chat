@@ -3,7 +3,7 @@ import { z } from "zod"
 import { agentModelConfigSchema } from "./schemas"
 
 export const chatSettingsSchema = agentModelConfigSchema.extend({
-  providerOptions: z.record(z.enum(["openai", "anthropic", "google"]), z.string()),
+  providerOptions: z.record(z.enum(["openai", "codex", "anthropic", "google"]), z.string()),
 })
 export const chatThreadSchema = z.object({
   id: z.string().min(1),

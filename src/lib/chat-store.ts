@@ -1,6 +1,6 @@
 import type { UIMessage } from "ai"
 
-export type ProviderId = "openai" | "anthropic" | "google"
+export type ProviderId = "openai" | "codex" | "anthropic" | "google"
 
 export type ProviderOptionsJson = Record<ProviderId, string>
 
@@ -28,6 +28,7 @@ export type ThreadsStore = {
 
 export const DEFAULT_PROVIDER_OPTIONS: ProviderOptionsJson = {
   openai: "{}",
+  codex: "{}",
   anthropic: "{}",
   google: "{}",
 }

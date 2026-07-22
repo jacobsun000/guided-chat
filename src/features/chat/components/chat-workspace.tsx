@@ -123,6 +123,25 @@ const PROVIDERS: Record<
     thinkingEffortOptions: { label: string; value: string; description: string }[]
   }
 > = {
+  codex: {
+    label: "Codex OAuth",
+    defaultModel: "gpt-5.6-sol",
+    defaultThinkingEffort: "xhigh",
+    models: [
+      { label: "GPT-5.6 Sol", value: "gpt-5.6-sol", description: "Deep research" },
+      { label: "GPT-5.6 Terra", value: "gpt-5.6-terra", description: "Coding model" },
+      { label: "GPT-5.6 Luna", value: "gpt-5.6-luna", description: "Fast coding model" },
+      { label: "GPT-5.5", value: "gpt-5.5", description: "Flagship" },
+      { label: "GPT-5.4", value: "gpt-5.4", description: "Previous generation" },
+    ],
+    thinkingEffortOptions: [
+      { label: "Default", value: "default", description: "Provider default" },
+      { label: "Low", value: "low", description: "Light reasoning" },
+      { label: "Medium", value: "medium", description: "Balanced reasoning" },
+      { label: "High", value: "high", description: "Deep reasoning" },
+      { label: "X High", value: "xhigh", description: "Maximum reasoning" },
+    ],
+  },
   openai: {
     label: "OpenAI",
     defaultModel: "gpt-5.6-sol",

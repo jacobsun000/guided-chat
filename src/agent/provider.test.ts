@@ -10,4 +10,8 @@ describe("provider option normalization", () => {
     expect(normalizeProviderOptions({ provider: "google", model: "model", thinkingEffort: "low", providerOptions: { thinkingConfig: { includeThoughts: true } } }))
       .toEqual({ google: { thinkingConfig: { includeThoughts: true, thinkingLevel: "low" } } })
   })
+  it("uses the Codex provider namespace for reasoning effort", () => {
+    expect(normalizeProviderOptions({ provider: "codex", model: "gpt-5.6-sol", thinkingEffort: "high", providerOptions: { textVerbosity: "low" } }))
+      .toEqual({ codex: { textVerbosity: "low", reasoningEffort: "high" } })
+  })
 })

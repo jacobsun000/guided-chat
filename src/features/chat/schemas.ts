@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const providerIdSchema = z.enum(["openai", "anthropic", "google"])
+export const providerIdSchema = z.enum(["openai", "codex", "anthropic", "google"])
 export type ProviderId = z.infer<typeof providerIdSchema>
 
 export const agentModelConfigSchema = z.object({
@@ -24,4 +24,3 @@ export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>
 export const apiErrorSchema = z.object({
   error: z.object({ code: apiErrorCodeSchema, message: z.string() }),
 })
-
