@@ -10,7 +10,7 @@ import { getCodexAuthSession } from "./codex-auth"
 
 const PROVIDER_KEYS: Record<ProviderId, string> = {
   openai: "openai",
-  codex: "codex",
+  codex: "openai",
   anthropic: "anthropic",
   google: "google",
 }
@@ -69,6 +69,11 @@ export function createModel(config: AgentModelConfig, env: AgentEnvironment = pr
 
 export function normalizeProviderOptions(config: AgentModelConfig): ProviderMetadata | undefined {
   const raw = { ...config.providerOptions }
+  if (config.provider === "codex") {
+    // Codex OAuth responses are stateless. The OpenAI adapter needs this before
+    // prompt conversion so it replays encrypted reasoning instead of rs_* refs.
+    raw.store = false
+  }
   if (config.thinkingEffort !== "default") {
     if (config.provider === "openai") raw.reasoningEffort = config.thinkingEffort
     else if (config.provider === "codex") raw.reasoningEffort = config.thinkingEffort

@@ -10,8 +10,12 @@ describe("provider option normalization", () => {
     expect(normalizeProviderOptions({ provider: "google", model: "model", thinkingEffort: "low", providerOptions: { thinkingConfig: { includeThoughts: true } } }))
       .toEqual({ google: { thinkingConfig: { includeThoughts: true, thinkingLevel: "low" } } })
   })
-  it("uses the Codex provider namespace for reasoning effort", () => {
+  it("uses OpenAI adapter options for Codex reasoning", () => {
     expect(normalizeProviderOptions({ provider: "codex", model: "gpt-5.6-sol", thinkingEffort: "high", providerOptions: { textVerbosity: "low" } }))
-      .toEqual({ codex: { textVerbosity: "low", reasoningEffort: "high" } })
+      .toEqual({ openai: { textVerbosity: "low", store: false, reasoningEffort: "high" } })
+  })
+  it("keeps Codex stateless when no other options are configured", () => {
+    expect(normalizeProviderOptions({ provider: "codex", model: "gpt-5.6-sol", thinkingEffort: "default", providerOptions: {} }))
+      .toEqual({ openai: { store: false } })
   })
 })
