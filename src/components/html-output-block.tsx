@@ -44,6 +44,27 @@ export function getScaledHtmlOutputHeight(
   )
 }
 
+function HtmlOutputLoading() {
+  return (
+    <div className="html-output-loading" role="status" aria-live="polite">
+      <div className="html-output-loading-preview" aria-hidden="true">
+        <div className="html-output-loading-toolbar">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="html-output-loading-grid">
+          <div className="html-output-loading-panel html-output-loading-panel-lg" />
+          <div className="html-output-loading-panel" />
+          <div className="html-output-loading-panel" />
+        </div>
+        <div className="html-output-loading-progress" />
+      </div>
+      <span>Rendering HTML preview</span>
+    </div>
+  )
+}
+
 function escapeStyleContent(value: string) {
   return value.replace(/<\/style/gi, "<\\/style")
 }
@@ -233,7 +254,13 @@ function buildSrcDoc(
 </html>`
 }
 
-export function HtmlOutputBlock({ source }: { source: string }) {
+export function HtmlOutputBlock({
+  source,
+  deferRendering = false,
+}: {
+  source: string
+  deferRendering?: boolean
+}) {
   const { resolvedTheme } = useTheme()
   const blockId = React.useId()
   const [width, setWidth] = React.useState(FRAME_WIDTH)
@@ -269,6 +296,10 @@ export function HtmlOutputBlock({ source }: { source: string }) {
   }, [])
 
   React.useEffect(() => {
+    if (deferRendering) {
+      return
+    }
+
     const controller = new AbortController()
 
     fetch("/api/html-output/tailwind", {
@@ -302,7 +333,7 @@ export function HtmlOutputBlock({ source }: { source: string }) {
       })
 
     return () => controller.abort()
-  }, [source])
+  }, [deferRendering, source])
 
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent<HtmlBlockHeightMessage>) => {
@@ -356,23 +387,8 @@ export function HtmlOutputBlock({ source }: { source: string }) {
         <div className="html-output-error" role="alert">
           {error}
         </div>
-      ) : css === null ? (
-        <div className="html-output-loading" role="status" aria-live="polite">
-          <div className="html-output-loading-preview" aria-hidden="true">
-            <div className="html-output-loading-toolbar">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="html-output-loading-grid">
-              <div className="html-output-loading-panel html-output-loading-panel-lg" />
-              <div className="html-output-loading-panel" />
-              <div className="html-output-loading-panel" />
-            </div>
-            <div className="html-output-loading-progress" />
-          </div>
-          <span>Rendering HTML preview</span>
-        </div>
+      ) : deferRendering || css === null ? (
+        <HtmlOutputLoading />
       ) : (
         <div className="html-output-frame" style={{ height }}>
           <div

@@ -1409,6 +1409,7 @@ function MessageBubble({
                       key={index}
                       text={part.text}
                       isUser={false}
+                      isStreaming={isStreaming}
                     />
                   )
                 }
@@ -1830,10 +1831,16 @@ function AnsweredQuestionsTranscript({ part }: { part: AskUserQuestionsPart }) {
 function MarkdownContent({
   text,
   isUser,
+  isStreaming = false,
 }: {
   text: string
   isUser: boolean
+  isStreaming?: boolean
 }) {
+  const openHtmlFenceSource = React.useMemo(
+    () => (isStreaming ? getOpenHtmlFenceSource(text) : null),
+    [isStreaming, text]
+  )
   const renderPre = React.useCallback(
     (props: React.ComponentProps<"pre"> & { node?: unknown }) => {
       const { node, children, ...preProps } = props
@@ -1851,13 +1858,20 @@ function MarkdownContent({
         if (language === "html") {
           const source = React.Children.toArray(childProps.children).join("")
 
+          if (
+            openHtmlFenceSource !== null &&
+            source.trimEnd() === openHtmlFenceSource.trimEnd()
+          ) {
+            return <HtmlOutputBlock source={source} deferRendering />
+          }
+
           return <HtmlOutputBlock source={source} />
         }
       }
 
       return <pre {...preProps}>{children}</pre>
     },
-    [isUser]
+    [isUser, openHtmlFenceSource]
   )
 
   return (
@@ -1888,6 +1902,41 @@ function MarkdownContent({
       </ReactMarkdown>
     </div>
   )
+}
+
+export function getOpenHtmlFenceSource(markdown: string): string | null {
+  const lines = markdown.split("\n")
+  let fence: { character: "`" | "~"; length: number; start: number } | null = null
+  let offset = 0
+
+  for (const line of lines) {
+    if (fence === null) {
+      const opening = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*html(?:[ \t].*)?$/i)
+
+      if (opening) {
+        const marker = opening[1]
+        fence = {
+          character: marker[0] as "`" | "~",
+          length: marker.length,
+          start: offset + line.length + 1,
+        }
+      }
+    } else {
+      const closing = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/)
+
+      if (
+        closing &&
+        closing[1][0] === fence.character &&
+        closing[1].length >= fence.length
+      ) {
+        fence = null
+      }
+    }
+
+    offset += line.length + 1
+  }
+
+  return fence === null ? null : markdown.slice(fence.start)
 }
 
 function SettingsDialog({
