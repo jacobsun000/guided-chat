@@ -30,23 +30,116 @@ export class ResearchAgentService {
   constructor(private readonly dependencies: ResearchAgentDependencies = {}) {}
 
   async stream(request: ResearchAgentRequest) {
-    const env = this.dependencies.env ?? process.env
-    const manager = this.dependencies.sandboxManager ?? getSandboxManager()
-    const tools = (this.dependencies.createTools ?? createAgentTools)(env, this.dependencies.network, { manager, threadId: request.threadId, abortSignal: request.abortSignal })
-    const model = (this.dependencies.createModel ?? createModel)(request.agentConfig, env)
-    const agent = new ToolLoopAgent({
-      id: "research-agent",
-      model,
-      instructions: RESEARCH_SYSTEM_PROMPT,
-      providerOptions: normalizeProviderOptions(request.agentConfig),
-      tools,
-      stopWhen: [hasToolCall("update_plan"), stepCountIs(40)],
+    const requestId = crypto.randomUUID().slice(0, 8)
+    const startedAt = Date.now()
+    let completedSteps = 0
+    let lastActivity = "initializing model"
+    const log = (event: string, details: Record<string, unknown> = {}) => {
+      console.info(
+        "[research-agent]",
+        JSON.stringify({
+          event,
+          requestId,
+          threadId: request.threadId,
+          elapsedMs: Date.now() - startedAt,
+          ...details,
+        })
+      )
+    }
+    const heartbeat = setInterval(() => {
+      log("still-running", { completedSteps, lastActivity })
+    }, 30_000)
+    heartbeat.unref()
+    const finishLogging = () => clearInterval(heartbeat)
+    request.abortSignal?.addEventListener(
+      "abort",
+      () => {
+        finishLogging()
+        log("aborted", { completedSteps, lastActivity })
+      },
+      { once: true }
+    )
+
+    log("started", {
+      provider: request.agentConfig.provider,
+      model: request.agentConfig.model,
+      thinkingEffort: request.agentConfig.thinkingEffort,
+      messageCount: request.messages.length,
     })
-    return createAgentUIStreamResponse({
-      agent,
-      uiMessages: prepareActionMessages(request.messages),
-      abortSignal: request.abortSignal,
-    })
+
+    try {
+      const env = this.dependencies.env ?? process.env
+      const manager = this.dependencies.sandboxManager ?? getSandboxManager()
+      const tools = (this.dependencies.createTools ?? createAgentTools)(
+        env,
+        this.dependencies.network,
+        {
+          manager,
+          threadId: request.threadId,
+          abortSignal: request.abortSignal,
+        }
+      )
+      const model = (this.dependencies.createModel ?? createModel)(
+        request.agentConfig,
+        env
+      )
+      const agent = new ToolLoopAgent({
+        id: "research-agent",
+        model,
+        instructions: RESEARCH_SYSTEM_PROMPT,
+        providerOptions: normalizeProviderOptions(request.agentConfig),
+        tools,
+        stopWhen: [hasToolCall("update_plan"), stepCountIs(40)],
+        onStepFinish: (step) => {
+          completedSteps += 1
+          const toolNames = step.toolCalls.map((call) => call.toolName)
+          lastActivity =
+            toolNames.length > 0
+              ? `completed tools: ${toolNames.join(", ")}`
+              : `completed model step ${completedSteps}`
+          log("step-finished", {
+            step: completedSteps,
+            finishReason: step.finishReason,
+            toolNames,
+            toolResultCount: step.toolResults.length,
+            reasoningCharacters: step.reasoningText?.length ?? 0,
+            textCharacters: step.text.length,
+            inputTokens: step.usage.inputTokens,
+            outputTokens: step.usage.outputTokens,
+          })
+        },
+        onFinish: (result) => {
+          finishLogging()
+          log("finished", {
+            completedSteps: result.steps.length,
+            finishReason: result.finishReason,
+            inputTokens: result.totalUsage.inputTokens,
+            outputTokens: result.totalUsage.outputTokens,
+          })
+        },
+      })
+      const response = await createAgentUIStreamResponse({
+        agent,
+        uiMessages: prepareActionMessages(request.messages),
+        abortSignal: request.abortSignal,
+      })
+      log("stream-opened")
+      return response
+    } catch (error) {
+      finishLogging()
+      console.error(
+        "[research-agent]",
+        JSON.stringify({
+          event: "failed",
+          requestId,
+          threadId: request.threadId,
+          elapsedMs: Date.now() - startedAt,
+          completedSteps,
+          error: error instanceof Error ? error.message : "Unknown error",
+        })
+      )
+      throw error
+    }
   }
 }
 

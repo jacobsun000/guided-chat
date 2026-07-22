@@ -74,6 +74,60 @@ type DragState = {
   scrollTop: number
 }
 
+function ExpandableStationText({
+  children,
+  lines,
+  className,
+}: {
+  children: string
+  lines: 2 | 3
+  className?: string
+}) {
+  const textRef = React.useRef<HTMLSpanElement>(null)
+  const [isTrimmed, setIsTrimmed] = React.useState(false)
+
+  React.useLayoutEffect(() => {
+    const text = textRef.current
+    if (!text) return
+
+    const measure = () => {
+      const lineHeight = Number.parseFloat(getComputedStyle(text).lineHeight)
+      setIsTrimmed(text.scrollHeight > lineHeight * lines + 1)
+    }
+
+    measure()
+    if (typeof ResizeObserver === "undefined") return
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(text)
+    return () => observer.disconnect()
+  }, [children, lines])
+
+  return (
+    <span
+      className={cn(
+        "relative block overflow-hidden transition-[max-height] duration-300 ease-in-out",
+        lines === 2
+          ? "max-h-8 group-hover:max-h-24 group-focus-visible:max-h-24"
+          : "max-h-12 group-hover:max-h-40 group-focus-visible:max-h-40",
+        className
+      )}
+    >
+      <span ref={textRef} className="block">
+        {children}
+      </span>
+      {isTrimmed && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-0 bottom-0 bg-gradient-to-r from-transparent via-background to-background pl-2 transition-opacity duration-150 group-hover:opacity-0 group-focus-visible:opacity-0"
+        >
+          …
+        </span>
+      )}
+    </span>
+  )
+}
+
 export function ResearchMetroMap({
   plan,
   currentStepName,
@@ -227,9 +281,9 @@ export function ResearchMetroMap({
                 x2={layout.centerX}
                 y1={layout.spineStartY}
                 y2={layout.spineEndY}
-                stroke="color-mix(in oklch, var(--primary), var(--foreground) 8%)"
+                stroke="var(--primary)"
                 strokeLinecap="round"
-                strokeWidth="6"
+                strokeWidth="8"
                 className="metro-map-track"
               />
 
@@ -293,11 +347,10 @@ export function ResearchMetroMap({
               const card = (
                 <span
                   className={cn(
-                    "block shrink-0 rounded-lg border bg-background px-3 py-2.5 shadow-sm transition-[border-color,box-shadow,transform,background-color] duration-300 group-hover:-translate-y-0.5 group-hover:shadow-md group-focus-visible:ring-2 group-focus-visible:ring-ring/50",
+                    "block shrink-0 rounded-lg border bg-background px-3 py-2.5 shadow-sm transition-[border-color,box-shadow,transform,background-color] duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg group-focus-visible:-translate-y-0.5 group-focus-visible:shadow-lg group-focus-visible:ring-2 group-focus-visible:ring-ring/50",
                     station.side === "left" ? "text-right" : "text-left",
                     isCurrent &&
                       "border-primary shadow-md ring-1 ring-primary/25",
-                    isVisited && !isCurrent && "bg-muted"
                   )}
                   style={{
                     width: STATION_CARD_WIDTH,
@@ -314,21 +367,25 @@ export function ResearchMetroMap({
                 >
                   <span
                     className={cn(
-                      "flex items-start justify-between gap-2",
+                      "flex items-start gap-2 text-xs font-semibold leading-4",
                       station.side === "left" && "flex-row-reverse"
                     )}
                   >
-                    <span className="line-clamp-2 text-xs font-semibold leading-4">
+                    <ExpandableStationText lines={2} className="flex-1">
                       {station.step.name}
-                    </span>
-                    <span className="shrink-0 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-                      {String(station.order + 1).padStart(2, "0")} ·{" "}
-                      {isCurrent ? "Now" : isVisited ? "Seen" : "Go"}
-                    </span>
+                    </ExpandableStationText>
+                    {(isCurrent || isVisited) && (
+                      <span className="shrink-0 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {isCurrent ? "Now" : "Seen"}
+                      </span>
+                    )}
                   </span>
-                  <span className="mt-1.5 line-clamp-3 text-[11px] leading-4 text-muted-foreground">
+                  <ExpandableStationText
+                    lines={3}
+                    className="mt-1.5 text-[11px] leading-4 text-muted-foreground"
+                  >
                     {station.step.description}
-                  </span>
+                  </ExpandableStationText>
                 </span>
               )
 
@@ -342,7 +399,7 @@ export function ResearchMetroMap({
                   aria-label={`Explore ${station.step.name}`}
                   onClick={() => onSelectStep(station.step)}
                   className={cn(
-                    "metro-map-station group absolute z-10 flex -translate-y-1/2 items-center text-left transition-[left,top,opacity] duration-700 ease-out focus-visible:outline-none disabled:cursor-wait disabled:opacity-60",
+                    "metro-map-station group absolute z-10 flex -translate-y-1/2 items-center text-left transition-[left,top,opacity] duration-700 ease-out hover:z-30 focus-visible:z-30 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60",
                     isCurrent && "z-20"
                   )}
                   style={{

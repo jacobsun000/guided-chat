@@ -13,7 +13,7 @@ export const researchPlanStepSchema = z.object({
     .min(1)
     .max(500)
     .describe(
-      "What the user will learn or decide at this step, scoped to one focused slide."
+      "One or two concise sentences stating only what the user will learn or decide at this focused station and why it matters. Omit background, examples, evidence details, transitions, and filler."
     ),
   next_steps: z
     .array(z.string().min(1).max(80))

@@ -13,6 +13,7 @@ import {
   AlertCircleIcon,
   BotIcon,
   CheckIcon,
+  ChevronDownIcon,
   CopyIcon,
   KeyRoundIcon,
   Loader2Icon,
@@ -22,6 +23,8 @@ import {
   XIcon,
   TerminalIcon,
   FilePenLineIcon,
+  BrainIcon,
+  WrenchIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -35,7 +38,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   Empty,
@@ -360,11 +362,18 @@ function isVisibleAssistantPart(part: ResearchAssistantMessage["parts"][number])
   return (
     part.type === "text" ||
     (part.type === "tool-ask_user_questions" &&
-      (part.state === "output-available" || part.state === "output-error")) ||
+      (part.state === "input-available" ||
+        part.state === "output-available" ||
+        part.state === "output-error")) ||
     (part.type === "tool-update_plan" &&
-      (part.state === "output-available" || part.state === "output-error")) ||
-    part.type === "tool-exec" || part.type === "tool-apply_patch"
+      (part.state === "output-available" || part.state === "output-error"))
   )
+}
+
+function isAssistantActivityPart(
+  part: ResearchAssistantMessage["parts"][number]
+) {
+  return part.type === "reasoning" || part.type.startsWith("tool-")
 }
 
 function titleFromText(text: string) {
@@ -1148,6 +1157,12 @@ export default function Home() {
                   <MessageBubble
                     key={message.id}
                     message={message}
+                    isStreaming={
+                      isStreaming &&
+                      message.role === "assistant" &&
+                      message === messages.at(-1)
+                    }
+                    onSubmitQuestion={submitQuestionAnswers}
                     onCopy={() => copyMessage(message)}
                   />
                 ))}
@@ -1178,15 +1193,6 @@ export default function Home() {
                           "Enter the workspace access token in settings before sending."}
                       </AlertDescription>
                     </Alert>
-                  )}
-
-                  {pendingQuestionPart && (
-                    <AskUserQuestionsPanel
-                      key={pendingQuestionPart.toolCallId}
-                      part={pendingQuestionPart}
-                      disabled={false}
-                      onSubmit={submitQuestionAnswers}
-                    />
                   )}
 
                   {!pendingQuestionPart && (
@@ -1325,9 +1331,16 @@ export default function Home() {
 
 function MessageBubble({
   message,
+  isStreaming = false,
+  onSubmitQuestion,
   onCopy,
 }: {
   message: ResearchAssistantMessage
+  isStreaming?: boolean
+  onSubmitQuestion: (
+    toolCallId: string,
+    output: AskUserQuestionsOutput
+  ) => void
   onCopy: () => void
 }) {
   const isUser = message.role === "user"
@@ -1335,6 +1348,9 @@ function MessageBubble({
   const visibleAssistantParts = isUser
     ? []
     : message.parts.filter(isVisibleAssistantPart)
+  const activityParts = isUser
+    ? []
+    : message.parts.filter(isAssistantActivityPart)
 
   return (
     <article
@@ -1361,6 +1377,12 @@ function MessageBubble({
             <MarkdownContent text={text} isUser={isUser} />
           ) : !isUser && visibleAssistantParts.length ? (
             <div className="flex flex-col gap-3">
+              {activityParts.length > 0 && (
+                <AssistantActivity
+                  parts={activityParts}
+                  streaming={isStreaming}
+                />
+              )}
               {visibleAssistantParts.map((part, index) => {
                 if (part.type === "text") {
                   return (
@@ -1376,8 +1398,18 @@ function MessageBubble({
                   return <PlanUpdateCard key={part.toolCallId} part={part} />
                 }
 
-                if (part.type === "tool-exec" || part.type === "tool-apply_patch") {
-                  return <SandboxToolCard key={part.toolCallId} part={part} />
+                if (
+                  part.type === "tool-ask_user_questions" &&
+                  part.state === "input-available"
+                ) {
+                  return (
+                    <AskUserQuestionsPanel
+                      key={part.toolCallId}
+                      part={part}
+                      disabled={isStreaming}
+                      onSubmit={onSubmitQuestion}
+                    />
+                  )
                 }
 
                 return (
@@ -1386,10 +1418,7 @@ function MessageBubble({
               })}
             </div>
           ) : (
-            <span className="inline-flex items-center gap-2 text-muted-foreground">
-              <Spinner />
-              Streaming
-            </span>
+            <AssistantActivity parts={activityParts} streaming={isStreaming} />
           )}
         </div>
         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/message:opacity-100 group-focus-within/message:opacity-100">
@@ -1406,6 +1435,126 @@ function MessageBubble({
       </div>
     </article>
   )
+}
+
+type AssistantActivityPart = ResearchAssistantMessage["parts"][number]
+
+export function AssistantActivity({
+  parts,
+  streaming,
+}: {
+  parts: AssistantActivityPart[]
+  streaming: boolean
+}) {
+  const [open, setOpen] = React.useState(false)
+  const activityParts = parts.filter(isAssistantActivityPart)
+  const label = streaming ? "Streaming" : "Activity"
+
+  return (
+    <div className="min-w-0 text-xs text-muted-foreground">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="group/activity inline-flex items-center gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {streaming ? <Spinner /> : <BrainIcon className="size-3.5" />}
+        <span className="font-medium">{label}</span>
+        {activityParts.length > 0 && (
+          <span className="tabular-nums text-muted-foreground/70">
+            {activityParts.length}
+          </span>
+        )}
+        <ChevronDownIcon
+          className={cn(
+            "size-3.5 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+
+      {open && (
+        <div className="mt-2 flex max-h-[32rem] flex-col gap-2 overflow-y-auto border-l pl-3">
+          {activityParts.length > 0 ? (
+            activityParts.map((part, index) => (
+              <ActivityPart key={getActivityPartKey(part, index)} part={part} />
+            ))
+          ) : (
+            <div className="py-2 italic">Waiting for model activity…</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function getActivityPartKey(part: AssistantActivityPart, index: number) {
+  return "toolCallId" in part ? part.toolCallId : `${part.type}-${index}`
+}
+
+function ActivityPart({ part }: { part: AssistantActivityPart }) {
+  if (part.type === "reasoning") {
+    return (
+      <section className="rounded-md border bg-muted/20 px-3 py-2">
+        <div className="mb-1.5 flex items-center gap-2 font-medium text-foreground">
+          <BrainIcon className="size-3.5 text-primary" />
+          Thinking
+          {part.state === "streaming" && <Spinner />}
+        </div>
+        <div className="whitespace-pre-wrap break-words leading-5 text-muted-foreground">
+          {part.text || "Thinking…"}
+        </div>
+      </section>
+    )
+  }
+
+  if (!part.type.startsWith("tool-")) return null
+  if (part.type === "tool-exec" || part.type === "tool-apply_patch") {
+    return <SandboxToolCard part={part} />
+  }
+
+  const toolName = part.type.slice("tool-".length)
+  const state = "state" in part ? part.state : undefined
+  const input = "input" in part ? part.input : undefined
+  const output = "output" in part ? part.output : undefined
+  const errorText = "errorText" in part ? part.errorText : undefined
+  const running = state === "input-streaming" || state === "input-available"
+
+  return (
+    <section className="rounded-md border bg-muted/20">
+      <div className="flex items-center gap-2 px-3 py-2">
+        {running ? <Spinner /> : <WrenchIcon className="size-3.5" />}
+        <span className="font-medium text-foreground">{toolName}</span>
+        {state && (
+          <Badge
+            variant={state === "output-error" ? "destructive" : "secondary"}
+          >
+            {formatToolState(state)}
+          </Badge>
+        )}
+      </div>
+      {input !== undefined && <ActivityData label="Input" value={input} />}
+      {output !== undefined && <ActivityData label="Output" value={output} />}
+      {typeof errorText === "string" && (
+        <pre className="overflow-auto whitespace-pre-wrap border-t px-3 py-2 text-destructive">{errorText}</pre>
+      )}
+    </section>
+  )
+}
+
+function ActivityData({ label, value }: { label: string; value: unknown }) {
+  return (
+    <details className="border-t">
+      <summary className="cursor-pointer px-3 py-2 font-medium">{label}</summary>
+      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all px-3 pb-3 font-mono text-[11px] leading-4 text-foreground/80">
+        {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+      </pre>
+    </details>
+  )
+}
+
+function formatToolState(state: string) {
+  return state.replace("input-", "").replace("output-", "")
 }
 
 function PlanUpdateCard({ part }: { part: UpdatePlanPart }) {
@@ -1433,7 +1582,11 @@ function PlanUpdateCard({ part }: { part: UpdatePlanPart }) {
   )
 }
 
-function SandboxToolCard({ part }: { part: SandboxToolPart }) {
+function SandboxToolCard({
+  part,
+}: {
+  part: SandboxToolPart
+}) {
   const running = part.state === "input-streaming" || part.state === "input-available"
   const failed = part.state === "output-error"
   const output = part.state === "output-available" ? part.output : undefined
@@ -1465,7 +1618,7 @@ function SandboxToolCard({ part }: { part: SandboxToolPart }) {
   )
 }
 
-function AskUserQuestionsPanel({
+export function AskUserQuestionsPanel({
   part,
   disabled,
   onSubmit,
@@ -1475,7 +1628,6 @@ function AskUserQuestionsPanel({
   onSubmit: (toolCallId: string, output: AskUserQuestionsOutput) => void
 }) {
   const input = part.input as AskUserQuestionsInput
-  const [open, setOpen] = React.useState(false)
   const [selectedAnswers, setSelectedAnswers] = React.useState<
     Record<string, string>
   >({})
@@ -1520,30 +1672,24 @@ function AskUserQuestionsPanel({
         }
       }),
     })
-    setOpen(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <div className="flex min-h-11 items-center justify-center">
-        <DialogTrigger asChild>
-          <Button className="max-w-full">
-            {input.title ?? "Before I continue"}
-          </Button>
-        </DialogTrigger>
-      </div>
-      <DialogContent className="max-h-[min(85svh,720px)] gap-0 p-0 sm:max-w-xl">
-        <DialogHeader className="border-b px-4 py-3">
-          <div className="flex items-start justify-between gap-3 pr-8">
+    <section className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="border-b px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <DialogTitle>{input.title ?? "Before I continue"}</DialogTitle>
-              <DialogDescription>{input.purpose}</DialogDescription>
+              <h3 className="font-semibold text-foreground">
+                {input.title ?? "Before I continue"}
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {input.purpose}
+              </p>
             </div>
             <Badge variant="secondary" className="shrink-0">Question</Badge>
           </div>
-        </DialogHeader>
+        </div>
 
-        <ScrollArea className="max-h-[calc(min(85svh,720px)-8.5rem)]">
           <FieldGroup className="p-4">
             {input.questions.map((question, questionIndex) => {
               const selected = selectedAnswers[question.id]
@@ -1615,16 +1761,14 @@ function AskUserQuestionsPanel({
               )
             })}
           </FieldGroup>
-        </ScrollArea>
 
-        <DialogFooter className="border-t px-4 py-3">
+        <div className="flex justify-end border-t px-4 py-3">
           <Button onClick={submitAnswers} disabled={!allAnswered || disabled}>
             <CheckIcon data-icon="inline-start" />
             Continue
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </section>
   )
 }
 

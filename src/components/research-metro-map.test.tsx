@@ -56,18 +56,36 @@ describe("ResearchMetroMap", () => {
 
   it("sends the selected step when a station is clicked", () => {
     const onSelectStep = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+      configurable: true,
+      value: vi.fn(),
+    })
 
     render(
       <ResearchMetroMap
         plan={plan}
-        visitedStepNames={new Set()}
+        currentStepName="Evidence"
+        visitedStepNames={new Set(["Risks"])}
         disabled={false}
         isUpdating={false}
         onSelectStep={onSelectStep}
       />
     )
 
-    expect(screen.getByTestId("metro-spine")).toBeInTheDocument()
+    expect(screen.getByTestId("metro-spine")).toHaveAttribute(
+      "stroke",
+      "var(--primary)"
+    )
+    expect(screen.getByTestId("metro-spine")).toHaveAttribute(
+      "stroke-width",
+      "8"
+    )
+    expect(screen.queryByText(/01 · Go/i)).not.toBeInTheDocument()
+    expect(screen.queryByText("Go")).not.toBeInTheDocument()
+    expect(screen.getByText("Now")).toBeInTheDocument()
+    expect(screen.getByText("Seen")).toBeInTheDocument()
+    expect(screen.getByText("Inspect supporting evidence.").parentElement)
+      .toHaveClass("duration-300", "ease-in-out")
 
     fireEvent.click(screen.getByRole("button", { name: "Explore Risks" }))
 

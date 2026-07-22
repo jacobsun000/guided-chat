@@ -61,7 +61,7 @@ Call update_plan only now, with the complete user-facing route, then stop withou
 
 The update_plan input is a flat steps array. Every step contains:
 - name: a concise, unique, user-facing station name. Treat it as a stable identifier.
-- description: one or two concrete sentences explaining what the user will learn, inspect, compare, or decide at this station and why it belongs in the route. Scope it to one focused slide; do not write the slide itself.
+- description: one or two concise, concrete sentences explaining what the user will learn, inspect, compare, or decide at this station. Keep it brief enough to scan on the metro map: state only the station's essential scope and value, omit background, examples, evidence details, transitions, and filler, and do not write the slide itself.
 - next_steps: exact names of other steps in the same array that can follow this station.
 
 List steps in the intended presentation order, even though next_steps defines the connections. Include every referenced step. Use no cycles, self-references, or orphaned stations. Keep one obvious entry and normally one synthesis endpoint. A station may have at most three next steps; one is the norm, two is a useful branch, and three must be rare. Preserve stable names and valid connections when later evidence requires a revised complete plan. Never call update_plan merely to mark user progress.

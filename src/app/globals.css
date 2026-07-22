@@ -137,8 +137,8 @@
 
   .metro-map-track {
     stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    animation: metro-route-draw 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 2px color-mix(in oklch, var(--primary), transparent 55%));
   }
 
   .metro-map-station {
@@ -462,7 +462,16 @@
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .metro-map-track {
+    animation: metro-route-draw 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
 @keyframes metro-route-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
   to {
     stroke-dashoffset: 0;
   }
@@ -483,5 +492,9 @@
   .metro-map-track,
   .metro-map-station {
     animation: none;
+  }
+
+  .metro-map-track {
+    stroke-dashoffset: 0;
   }
 }
