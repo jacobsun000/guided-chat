@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  AtSignIcon,
   BadgeCheckIcon,
   BadgeQuestionMarkIcon,
   DatabaseIcon,
@@ -11,6 +12,7 @@ import { notFound } from "next/navigation"
 
 import { DatasetPageShell } from "@/components/dataset-page-shell"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -27,6 +29,7 @@ import {
   getTaskEvaluationHref,
   getTaskEvaluations,
 } from "@/lib/task-results"
+import { getChatReferenceHref } from "@/lib/source-references"
 
 export const dynamic = "force-dynamic"
 
@@ -57,12 +60,22 @@ export default async function TaskPage({ params }: TaskPageProps) {
             <ArrowLeftIcon />
             All tasks
           </Link>
-          <div className="flex flex-col gap-2">
-            <Badge variant="outline" className="w-fit">
-              Research task
-            </Badge>
-            <h2 className="text-xl font-semibold tracking-tight">{task.name}</h2>
-            <p className="max-w-3xl text-base leading-relaxed">{task.content}</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-2">
+              <Badge variant="outline" className="w-fit">
+                Research task
+              </Badge>
+              <h2 className="text-xl font-semibold tracking-tight">{task.name}</h2>
+              <p className="max-w-3xl text-base leading-relaxed">{task.content}</p>
+            </div>
+            <Button asChild className="w-fit">
+              <Link
+                href={getChatReferenceHref({ type: "task", id: task.id })}
+              >
+                <AtSignIcon data-icon="inline-start" />
+                Reference in chat
+              </Link>
+            </Button>
           </div>
         </div>
 

@@ -17,8 +17,9 @@ describe("normalizeSandboxWorkdir", () => {
   it.each([
     [undefined, "/workspace"], [".", "/workspace"], ["results/../data", "/workspace/data"],
     ["/workspace/a/../b", "/workspace/b"], ["/datasets/catalog", "/datasets/catalog"],
+    ["/tasks/hmda-01", "/tasks/hmda-01"],
   ])("normalizes %s", (input, expected) => expect(normalizeSandboxWorkdir(input)).toBe(expected))
-  it.each(["..", "../etc", "/etc", "/workspace/../../etc", "/datasets/../etc"])("rejects %s", (input) => {
+  it.each(["..", "../etc", "/etc", "/workspace/../../etc", "/datasets/../etc", "/tasks/../etc"])("rejects %s", (input) => {
     expect(() => normalizeSandboxWorkdir(input)).toThrow(/beneath/)
   })
 })

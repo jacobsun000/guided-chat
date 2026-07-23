@@ -7,7 +7,7 @@ import { createModel, normalizeProviderOptions, type AgentEnvironment } from "./
 import { RESEARCH_SYSTEM_PROMPT } from "./prompts"
 import { createAgentTools } from "./tools"
 import type { NetworkDependencies } from "./tools/read-image"
-import { prepareActionMessages } from "./messages"
+import { prepareActionMessages } from "./prepare-messages"
 import { getSandboxManager } from "./sandbox/docker"
 import type { SandboxManager } from "./sandbox/types"
 

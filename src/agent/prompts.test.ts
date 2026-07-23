@@ -35,4 +35,11 @@ describe("RESEARCH_SYSTEM_PROMPT", () => {
       "do not add a scrollable outer canvas"
     )
   })
+
+  it("documents validated @ references and read-only source roots", () => {
+    expect(RESEARCH_SYSTEM_PROMPT).toContain("selected @task and @dataset")
+    expect(RESEARCH_SYSTEM_PROMPT).toContain("<references> block")
+    expect(RESEARCH_SYSTEM_PROMPT).toContain("/tasks")
+    expect(RESEARCH_SYSTEM_PROMPT).toContain("/datasets")
+  })
 })

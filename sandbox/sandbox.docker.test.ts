@@ -11,7 +11,7 @@ describe.skipIf(!enabled)("sandbox image", () => {
     expect(output.trim()).toBe("ok")
   })
 
-  it("persists a thread workspace, mounts datasets read-only, and reconciles it", async () => {
+  it("persists a thread workspace, mounts sources read-only, and reconciles it", async () => {
     const docker = new Docker()
     const manager = new DockerSandboxManager({ docker, config: loadSandboxConfig() })
     const threadId = `integration-${Date.now()}`
@@ -19,7 +19,7 @@ describe.skipIf(!enabled)("sandbox image", () => {
     try {
       const patch = "*** Begin Patch\n*** Add File: result.txt\n+persisted\n*** End Patch\n"
       expect((await manager.applyPatch(threadId, patch)).exitCode).toBe(0)
-      const first = await manager.exec(threadId, { cmd: "cat result.txt; test -r /datasets/olist_brazilian_ecommerce/metadata.json; test ! -w /datasets" })
+      const first = await manager.exec(threadId, { cmd: "cat result.txt; test -r /datasets/olist_brazilian_ecommerce/metadata.json; test ! -w /datasets; test -r /tasks/hmda-01/task.md; test ! -w /tasks" })
       expect(first).toMatchObject({ exitCode: 0, stdout: "persisted\n" })
       await docker.getContainer(identity.containerName).remove({ force: true })
       expect((await manager.exec(threadId, { cmd: "cat result.txt" })).stdout).toBe("persisted\n")

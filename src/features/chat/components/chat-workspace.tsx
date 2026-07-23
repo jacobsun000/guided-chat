@@ -58,7 +58,6 @@ import {
 import {
   InputGroup,
   InputGroupButton,
-  InputGroupTextarea,
 } from "@/components/ui/input-group"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -117,6 +116,13 @@ import {
   researchMessageMetadataSchema,
   type ResearchMessageMetadata,
 } from "@/agent/messages"
+import {
+  getSourceReferenceOption,
+  getSourceReferenceText,
+  parseChatReference,
+  type SourceReferenceMention,
+} from "@/lib/source-references"
+import { SourceReferenceComposer } from "./source-reference-composer"
 
 const ACCESS_TOKEN_STORAGE_KEY = "guided-chat.access-token.v1"
 const THREADS_STORAGE_KEY = "guided-chat.threads.v1"
@@ -577,6 +583,9 @@ export default function Home() {
   const [store, setStore] = React.useState<ThreadsStore>(initialStore)
   const [accessToken, setAccessToken] = React.useState("")
   const [input, setInput] = React.useState("")
+  const [inputReferences, setInputReferences] = React.useState<
+    SourceReferenceMention[]
+  >([])
   const composerTextareaRef = React.useRef<HTMLTextAreaElement>(null)
   const [loaded, setLoaded] = React.useState(false)
   const [settingsOpen, setSettingsOpen] = React.useState(false)
@@ -693,8 +702,10 @@ export default function Home() {
     let cancelled = false
 
     async function loadInitialState() {
-      const requestedThreadId = new URLSearchParams(window.location.search).get(
-        "thread"
+      const searchParams = new URLSearchParams(window.location.search)
+      const requestedThreadId = searchParams.get("thread")
+      const incomingReference = parseChatReference(
+        searchParams.get("reference")
       )
       setAccessToken(loadAccessToken())
 
@@ -702,18 +713,56 @@ export default function Home() {
         const nextStore = await loadRemoteThreadsStore()
 
         if (!cancelled) {
-          setStore(selectRequestedThread(nextStore, requestedThreadId))
+          if (incomingReference) {
+            const thread = createThread()
+            const referenceText = getSourceReferenceText(incomingReference)
+            setStore({
+              version: 1,
+              activeThreadId: thread.id,
+              threads: [thread, ...nextStore.threads],
+            })
+            setInput(`${referenceText} `)
+            setInputReferences([
+              {
+                type: incomingReference.type,
+                id: incomingReference.id,
+                start: 0,
+                end: referenceText.length,
+              },
+            ])
+            window.history.replaceState({}, "", "/")
+            requestAnimationFrame(() => composerTextareaRef.current?.focus())
+          } else {
+            setStore(selectRequestedThread(nextStore, requestedThreadId))
+          }
         }
       } catch (err) {
         console.error(err)
 
         if (!cancelled) {
-          setStore(
-            selectRequestedThread(
-              loadLocalThreadsStore(),
-              requestedThreadId
-            )
-          )
+          const nextStore = loadLocalThreadsStore()
+          if (incomingReference) {
+            const thread = createThread()
+            const referenceText = getSourceReferenceText(incomingReference)
+            setStore({
+              version: 1,
+              activeThreadId: thread.id,
+              threads: [thread, ...nextStore.threads],
+            })
+            setInput(`${referenceText} `)
+            setInputReferences([
+              {
+                type: incomingReference.type,
+                id: incomingReference.id,
+                start: 0,
+                end: referenceText.length,
+              },
+            ])
+            window.history.replaceState({}, "", "/")
+            requestAnimationFrame(() => composerTextareaRef.current?.focus())
+          } else {
+            setStore(selectRequestedThread(nextStore, requestedThreadId))
+          }
           toast.error("Using browser chat history because the database is unavailable.")
         }
       } finally {
@@ -869,6 +918,7 @@ export default function Home() {
       threads: [thread, ...current.threads],
     }))
     setInput("")
+    setInputReferences([])
   }, [])
 
   const switchThread = React.useCallback(
@@ -882,6 +932,7 @@ export default function Home() {
         activeThreadId: id,
       }))
       setInput("")
+      setInputReferences([])
     },
     [isStreaming, stop]
   )
@@ -941,7 +992,14 @@ export default function Home() {
       clearError()
       setComposerError(null)
 
+      const leadingWhitespace = input.match(/^\s*/)?.[0].length ?? 0
       const text = input.trim()
+      const sentReferences = inputReferences.flatMap((reference) => {
+        const start = reference.start - leadingWhitespace
+        const end = reference.end - leadingWhitespace
+        if (start < 0 || end > text.length) return []
+        return [{ ...reference, start, end }]
+      })
 
       if (!text || isStreaming || hasPendingQuestion) {
         return
@@ -956,8 +1014,16 @@ export default function Home() {
       try {
         const requestBody = createChatRequest()
         setInput("")
+        setInputReferences([])
         await sendMessage(
-          { text },
+          {
+            text,
+            metadata: sentReferences.length
+              ? ({
+                  references: sentReferences,
+                } satisfies ResearchMessageMetadata)
+              : undefined,
+          },
           {
             body: requestBody,
           }
@@ -978,6 +1044,7 @@ export default function Home() {
       createChatRequest,
       hasAccessToken,
       input,
+      inputReferences,
       isStreaming,
       hasPendingQuestion,
       sendMessage,
@@ -1309,10 +1376,14 @@ export default function Home() {
                   {!pendingQuestionPart && (
                     <form onSubmit={submit}>
                       <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
-                        <InputGroupTextarea
+                        <SourceReferenceComposer
                           ref={composerTextareaRef}
                           value={input}
-                          onChange={(event) => setInput(event.target.value)}
+                          mentions={inputReferences}
+                          onValueChange={(value, references) => {
+                            setInput(value)
+                            setInputReferences(references)
+                          }}
                           onKeyDown={(event) => {
                             if (event.key === "Enter" && !event.shiftKey) {
                               event.preventDefault()
@@ -1456,6 +1527,12 @@ function MessageBubble({
 }) {
   const isUser = message.role === "user"
   const text = getMessageText(message)
+  const parsedMetadata = researchMessageMetadataSchema.safeParse(
+    message.metadata
+  )
+  const references = parsedMetadata.success
+    ? parsedMetadata.data?.references ?? []
+    : []
   const visibleAssistantParts = isUser
     ? []
     : message.parts.filter(isVisibleAssistantPart)
@@ -1485,7 +1562,11 @@ function MessageBubble({
           )}
         >
           {isUser && text ? (
-            <MarkdownContent text={text} isUser={isUser} />
+            <MarkdownContent
+              text={text}
+              isUser={isUser}
+              references={references}
+            />
           ) : !isUser && visibleAssistantParts.length ? (
             <div className="flex flex-col gap-3">
               {activityParts.length > 0 && (
@@ -1924,11 +2005,17 @@ function MarkdownContent({
   text,
   isUser,
   isStreaming = false,
+  references = [],
 }: {
   text: string
   isUser: boolean
   isStreaming?: boolean
+  references?: SourceReferenceMention[]
 }) {
+  const referencedMarkdown = React.useMemo(
+    () => prepareReferencedMarkdown(text, references),
+    [references, text]
+  )
   const openHtmlFenceSource = React.useMemo(
     () => (isStreaming ? getOpenHtmlFenceSource(text) : null),
     [isStreaming, text]
@@ -1975,6 +2062,17 @@ function MarkdownContent({
             const { node, ...anchorProps } = props
             void node
 
+            if (
+              anchorProps.href &&
+              referencedMarkdown.hrefs.has(anchorProps.href)
+            ) {
+              return (
+                <span className="bg-primary-foreground/15 text-inherit ring-1 ring-primary-foreground/25">
+                  {anchorProps.children}
+                </span>
+              )
+            }
+
             return <a {...anchorProps} target="_blank" rel="noreferrer" />
           },
           table: (props) => {
@@ -1990,10 +2088,48 @@ function MarkdownContent({
           pre: renderPre,
         }}
       >
-        {text}
+        {referencedMarkdown.text}
       </ReactMarkdown>
     </div>
   )
+}
+
+function prepareReferencedMarkdown(
+  text: string,
+  references: SourceReferenceMention[]
+) {
+  let markdown = text
+  const hrefs = new Set<string>()
+  const validReferences = references
+    .flatMap((reference) => {
+      const option = getSourceReferenceOption(reference.type, reference.id)
+      if (
+        !option ||
+        reference.start < 0 ||
+        reference.end <= reference.start ||
+        reference.end > text.length ||
+        text.slice(reference.start, reference.end) !==
+          getSourceReferenceText(option)
+      ) {
+        return []
+      }
+      return [{ ...reference, option }]
+    })
+    .toSorted((left, right) => right.start - left.start)
+
+  for (const [index, reference] of validReferences.entries()) {
+    const href = `#source-reference-${index}`
+    const label = text
+      .slice(reference.start, reference.end)
+      .replace(/([\\[\]])/g, "\\$1")
+    hrefs.add(href)
+    markdown =
+      markdown.slice(0, reference.start) +
+      `[${label}](${href})` +
+      markdown.slice(reference.end)
+  }
+
+  return { text: markdown, hrefs }
 }
 
 export function getOpenHtmlFenceSource(markdown: string): string | null {

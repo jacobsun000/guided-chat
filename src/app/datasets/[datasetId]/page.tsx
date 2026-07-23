@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  AtSignIcon,
   FileTextIcon,
   NotebookTabsIcon,
 } from "lucide-react"
@@ -10,6 +11,7 @@ import { notFound } from "next/navigation"
 import { DatasetPageShell } from "@/components/dataset-page-shell"
 import { TaskPreview } from "@/components/task-preview"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -20,6 +22,7 @@ import {
 import { getDatasetBySlug, getDatasetFileHref } from "@/lib/datasets"
 import { getTaskEvaluationCount } from "@/lib/task-results"
 import { getTasksByDatasetId } from "@/lib/tasks"
+import { getChatReferenceHref } from "@/lib/source-references"
 
 export const dynamic = "force-dynamic"
 
@@ -56,16 +59,29 @@ export default async function DatasetPage({ params }: DatasetPageProps) {
             <ArrowLeftIcon />
             All datasets
           </Link>
-          <div className="flex flex-col gap-2">
-            <Badge variant="outline" className="w-fit">
-              Dataset
-            </Badge>
-            <h2 className="text-xl font-semibold tracking-tight">
-              {dataset.metadata.name}
-            </h2>
-            <p className="max-w-3xl text-sm text-muted-foreground">
-              {dataset.metadata.description}
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-2">
+              <Badge variant="outline" className="w-fit">
+                Dataset
+              </Badge>
+              <h2 className="text-xl font-semibold tracking-tight">
+                {dataset.metadata.name}
+              </h2>
+              <p className="max-w-3xl text-sm text-muted-foreground">
+                {dataset.metadata.description}
+              </p>
+            </div>
+            <Button asChild className="w-fit">
+              <Link
+                href={getChatReferenceHref({
+                  type: "dataset",
+                  id: dataset.slug,
+                })}
+              >
+                <AtSignIcon data-icon="inline-start" />
+                Reference in chat
+              </Link>
+            </Button>
           </div>
         </div>
 

@@ -8,12 +8,13 @@ Agent command and file tools run in one persistent Docker sandbox per chat threa
 pnpm sandbox:build
 ```
 
-The sandbox uses `/workspace` for persistent writable files and mounts this repository's `datasets` directory read-only at `/datasets`. Deleting a thread permanently removes its sandbox container and workspace volume. Containers use Docker bridge networking with unrestricted outbound access, which can also expose reachable local-network services.
+The sandbox uses `/workspace` for persistent writable files and mounts this repository's `datasets` and `tasks` directories read-only at `/datasets` and `/tasks`. Deleting a thread permanently removes its sandbox container and workspace volume. Containers use Docker bridge networking with unrestricted outbound access, which can also expose reachable local-network services.
 
 Configuration variables and defaults are:
 
 - `GUIDED_CHAT_SANDBOX_IMAGE=guided-chat-sandbox:local`
 - `GUIDED_CHAT_DATASETS_PATH=<project>/datasets`
+- `GUIDED_CHAT_TASKS_PATH=<project>/tasks`
 - `GUIDED_CHAT_SANDBOX_CPUS=4`
 - `GUIDED_CHAT_SANDBOX_MEMORY_MB=8192`
 - `GUIDED_CHAT_SANDBOX_SWAP_MB=8192`

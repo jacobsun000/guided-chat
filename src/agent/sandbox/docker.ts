@@ -9,7 +9,7 @@ import { SandboxInfrastructureError, type SandboxExecRequest, type SandboxExecRe
 const MANAGED = "guided-chat.managed"
 const HASH = "guided-chat.thread-hash"
 const VERSION = "guided-chat.sandbox-version"
-const SANDBOX_VERSION = "1"
+const SANDBOX_VERSION = "2"
 const OUTPUT_LIMIT = 16 * 1024
 
 export function sandboxIdentity(threadId: string) {
@@ -101,7 +101,7 @@ export class DockerSandboxManager implements SandboxManager {
       HostConfig: { ReadonlyRootfs: true, CapDrop: ["ALL"], SecurityOpt: ["no-new-privileges:true"], Init: true,
         NetworkMode: "bridge", RestartPolicy: { Name: "no" }, NanoCpus: Math.round(this.config.cpus * 1e9), Memory: memory,
         MemorySwap: memory + this.config.swapMb * 1024 * 1024, PidsLimit: this.config.pids,
-        Binds: [`${identity.volumeName}:/workspace`, `${this.config.datasetsPath}:/datasets:ro`], Tmpfs: { "/tmp": "rw,nosuid,nodev,size=2147483648" } },
+        Binds: [`${identity.volumeName}:/workspace`, `${this.config.datasetsPath}:/datasets:ro`, `${this.config.tasksPath}:/tasks:ro`], Tmpfs: { "/tmp": "rw,nosuid,nodev,size=2147483648" } },
     })
     await container.start(); return container
   }
