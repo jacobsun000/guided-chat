@@ -35,7 +35,7 @@ export const DEFAULT_PROVIDER_OPTIONS: ProviderOptionsJson = {
 
 export function createDefaultSettings(): ChatSettings {
   return {
-    provider: "openai",
+    provider: "codex",
     model: "gpt-5.6-sol",
     thinkingEffort: "xhigh",
     providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
