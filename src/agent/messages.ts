@@ -14,7 +14,16 @@ export type ExploreResearchStepAction = z.infer<
 >
 
 export const researchMessageMetadataSchema = z
-  .object({ action: exploreResearchStepActionSchema.optional() })
+  .object({
+    action: exploreResearchStepActionSchema.optional(),
+    usage: z.object({
+      inputTokens: z.number().nonnegative(),
+      cacheReadTokens: z.number().nonnegative(),
+      cacheWriteTokens: z.number().nonnegative(),
+      outputTokens: z.number().nonnegative(),
+      totalTokens: z.number().nonnegative(),
+    }).optional(),
+  })
   .optional()
 export type ResearchMessageMetadata = z.infer<typeof researchMessageMetadataSchema>
 

@@ -24,6 +24,7 @@ import {
   TerminalIcon,
   FilePenLineIcon,
   BrainIcon,
+  InfoIcon,
   WrenchIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -70,6 +71,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { HtmlOutputBlock } from "@/components/html-output-block"
@@ -340,6 +348,38 @@ function getResearchStepProgress(messages: ResearchAssistantMessage[]) {
   }
 
   return { currentStepName, visitedStepNames }
+}
+
+export function getThreadUsage(messages: ResearchAssistantMessage[]) {
+  const totals = {
+    contextTokens: 0,
+    inputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    responses: 0,
+  }
+
+  for (const message of messages) {
+    if (message.role !== "assistant") continue
+    const parsed = researchMessageMetadataSchema.safeParse(message.metadata)
+    const usage = parsed.success ? parsed.data?.usage : undefined
+    if (!usage) continue
+    totals.contextTokens = usage.inputTokens
+    totals.inputTokens += Math.max(0, usage.inputTokens - usage.cacheReadTokens)
+    totals.cacheReadTokens += usage.cacheReadTokens
+    totals.cacheWriteTokens += usage.cacheWriteTokens
+    totals.outputTokens += usage.outputTokens
+    totals.totalTokens += usage.totalTokens
+    totals.responses += 1
+  }
+
+  return totals
+}
+
+function formatTokenCount(value: number) {
+  return new Intl.NumberFormat("en-US").format(value)
 }
 
 function isResearchPlanUpdating(messages: ResearchAssistantMessage[]) {
@@ -635,6 +675,7 @@ export default function Home() {
     () => isResearchPlanUpdating(messages),
     [messages]
   )
+  const threadUsage = React.useMemo(() => getThreadUsage(messages), [messages])
 
   React.useLayoutEffect(() => {
     const textarea = composerTextareaRef.current
@@ -1144,6 +1185,57 @@ export default function Home() {
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <Select
+              value={activeThread.settings.thinkingEffort}
+              onValueChange={(thinkingEffort) => updateActiveSettings({ thinkingEffort })}
+            >
+              <SelectTrigger className="h-8 w-[112px] max-w-[28vw]" aria-label="Reasoning effort">
+                <BrainIcon className="size-3.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectGroup>
+                  {selectedProviderMeta.thinkingEffortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon-sm" aria-label="Thread info">
+                  <InfoIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 p-3">
+                <DropdownMenuLabel className="px-0 pt-0 text-sm font-medium text-foreground">
+                  Thread info
+                </DropdownMenuLabel>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                  <span className="text-muted-foreground">Context used</span>
+                  <span className="text-right tabular-nums">{formatTokenCount(threadUsage.contextTokens)}</span>
+                  <span className="text-muted-foreground">Input</span>
+                  <span className="text-right tabular-nums">{formatTokenCount(threadUsage.inputTokens)}</span>
+                  <span className="text-muted-foreground">Cache read</span>
+                  <span className="text-right tabular-nums">{formatTokenCount(threadUsage.cacheReadTokens)}</span>
+                  <span className="text-muted-foreground">Cache write</span>
+                  <span className="text-right tabular-nums">{formatTokenCount(threadUsage.cacheWriteTokens)}</span>
+                  <span className="text-muted-foreground">Output</span>
+                  <span className="text-right tabular-nums">{formatTokenCount(threadUsage.outputTokens)}</span>
+                </div>
+                <DropdownMenuSeparator className="my-3" />
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Total usage</span>
+                  <span className="font-medium tabular-nums">{formatTokenCount(threadUsage.totalTokens)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Responses tracked</span>
+                  <span className="tabular-nums">{threadUsage.responses}</span>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
