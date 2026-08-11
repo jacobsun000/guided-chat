@@ -7,6 +7,7 @@ import type { LanguageModel, ProviderMetadata } from "ai"
 
 import type { AgentModelConfig, ProviderId } from "@/features/chat/schemas"
 import { getCodexAuthSession } from "./codex-auth"
+import { createCodexFetch } from "./codex-fetch"
 
 const PROVIDER_KEYS: Record<ProviderId, string> = {
   openai: "openai",
@@ -25,26 +26,14 @@ export type AgentEnvironment = Readonly<Record<string, string | undefined>>
 
 export function createModel(config: AgentModelConfig, env: AgentEnvironment = process.env) {
   if (config.provider === "codex") {
-    const codexFetch: typeof fetch = async (input, init) => {
+    const codexFetch = createCodexFetch(async () => {
       const session = await getCodexAuthSession(env)
-      const headers = new Headers(init?.headers)
-      headers.set("authorization", `Bearer ${session.accessToken}`)
-      headers.set("chatgpt-account-id", session.accountId)
-      headers.set("originator", "guided-chat")
-      headers.set("openai-beta", "responses=experimental")
-
-      let body = init?.body
-      if (typeof body === "string") {
-        const json = JSON.parse(body) as Record<string, unknown>
-        json.store = false
-        const include = Array.isArray(json.include) ? json.include : []
-        if (!include.includes("reasoning.encrypted_content")) {
-          json.include = [...include, "reasoning.encrypted_content"]
-        }
-        body = JSON.stringify(json)
+      return {
+        authorization: `Bearer ${session.accessToken}`,
+        "chatgpt-account-id": session.accountId,
+        originator: "guided-chat",
       }
-      return fetch(input, { ...init, headers, body })
-    }
+    })
     return createOpenAI({
       name: "codex",
       apiKey: "codex-oauth",
