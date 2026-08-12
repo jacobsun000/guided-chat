@@ -3,7 +3,7 @@ import path from "node:path"
 
 export const TASK_RESULT_PREVIEW_ROW_LIMIT = 50
 
-export type TaskResultFileKind = "markdown" | "csv"
+export type TaskResultFileKind = "markdown" | "csv" | "text"
 
 export type TaskResultFile = {
   name: string
@@ -65,6 +65,10 @@ function getFileKind(fileName: string): TaskResultFileKind | null {
     return "csv"
   }
 
+  if (extension === ".txt") {
+    return "text"
+  }
+
   return null
 }
 
@@ -115,9 +119,15 @@ async function collectFiles(
     files.push({ name: relativeName, kind, size: fileStats.size })
   }
 
+  const kindOrder: Record<TaskResultFileKind, number> = {
+    markdown: 0,
+    text: 1,
+    csv: 2,
+  }
+
   return files.sort((left, right) => {
     if (left.kind !== right.kind) {
-      return left.kind === "markdown" ? -1 : 1
+      return kindOrder[left.kind] - kindOrder[right.kind]
     }
 
     return left.name.localeCompare(right.name)
@@ -285,6 +295,7 @@ export async function getTaskEvaluation(
   const selectedFile =
     result.files.find((file) => file.name === requestedFileName) ??
     result.files.find((file) => file.kind === "markdown") ??
+    result.files.find((file) => file.kind === "text") ??
     result.files[0]
   const filePath = path.join(
     result.directory,

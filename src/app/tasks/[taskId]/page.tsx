@@ -191,8 +191,8 @@ export default async function TaskPage({ params }: TaskPageProps) {
                       <span className="font-medium">{evaluation.name}</span>
                       <span className="text-xs text-muted-foreground">
                         {evaluation.files.length} supported file
-                        {evaluation.files.length === 1 ? "" : "s"} · Markdown and
-                        CSV previews available
+                        {evaluation.files.length === 1 ? "" : "s"} · Markdown,
+                        text, and CSV previews available
                       </span>
                     </span>
                     <ArrowRightIcon className="shrink-0 text-muted-foreground" />

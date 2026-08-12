@@ -10,6 +10,7 @@ import { notFound } from "next/navigation"
 
 import { DatasetPageShell } from "@/components/dataset-page-shell"
 import { Badge } from "@/components/ui/badge"
+import { EvaluationReviewEditor } from "@/features/tasks/evaluation-review-editor"
 import {
   Card,
   CardContent,
@@ -28,6 +29,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import {
+  createEmptyEvaluationReview,
+  EVALUATION_METRICS,
+  getEvaluationReview,
+} from "@/lib/evaluation-reviews"
 import { getTaskById, getTaskHref } from "@/lib/tasks"
 import {
   getTaskEvaluation,
@@ -47,7 +53,7 @@ function FilePreview({
   content,
   csvPreview,
 }: {
-  kind: "markdown" | "csv"
+  kind: "markdown" | "csv" | "text"
   content: string
   csvPreview?: {
     columns: string[]
@@ -83,6 +89,14 @@ function FilePreview({
           {content}
         </ReactMarkdown>
       </div>
+    )
+  }
+
+  if (kind === "text") {
+    return (
+      <pre className="max-h-[min(65svh,42rem)] overflow-auto whitespace-pre-wrap break-words text-xs leading-relaxed">
+        {content}
+      </pre>
     )
   }
 
@@ -157,6 +171,9 @@ export default async function TaskEvaluationPage({
     notFound()
   }
 
+  const review =
+    (await getEvaluationReview(task.id, evaluation.id)) ??
+    createEmptyEvaluationReview()
   const currentFileIndex = evaluation.files.findIndex(
     (candidate) => candidate.name === evaluation.file.name
   )
@@ -186,11 +203,20 @@ export default async function TaskEvaluationPage({
           </div>
         </div>
 
+        <EvaluationReviewEditor
+          taskId={task.id}
+          evaluationId={evaluation.id}
+          initialReview={review}
+          artifactMetrics={EVALUATION_METRICS.artifactQuality}
+          subjectiveMetrics={EVALUATION_METRICS.subjectiveStudyMeasures}
+          scaleAnchors={EVALUATION_METRICS.scoring.artifactScale.anchors}
+        />
+
         <Card>
           <CardHeader>
             <CardTitle>Files</CardTitle>
             <CardDescription>
-              Select a result file to preview. Markdown is selected by default.
+              Select a result file to preview. A readable report is selected by default.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-3">
@@ -240,7 +266,9 @@ export default async function TaskEvaluationPage({
             <CardDescription>
               {evaluation.file.kind === "csv"
                 ? "Values are shown as strings from the submitted CSV."
-                : "The submitted Markdown is rendered for reading."}
+                : evaluation.file.kind === "markdown"
+                  ? "The submitted Markdown is rendered for reading."
+                  : "The submitted plain-text file is shown with its original line breaks."}
             </CardDescription>
           </CardHeader>
           <CardContent className={evaluation.file.kind === "csv" ? "p-0" : undefined}>
