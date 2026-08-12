@@ -46,3 +46,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Large generated ground-truth tables (over 1 MiB); keep them local.
+/tasks/sec-02/ground-truth/profitability_trends.csv
+/tasks/sec-04/ground-truth/revenue_comparability.csv
+/tasks/tlc-02/ground-truth/flagged_routes.csv
+/tasks/tlc-03/ground-truth/suspicious_trips.csv
+/tasks/tlc-04/ground-truth/cell_metrics.csv
+/tasks/tlc-04/ground-truth/cross_mode_context.csv
+/tasks/tlc-04/ground-truth/on_scene_checks.csv
+/tasks/tlc-04/ground-truth/provider_checks.csv
+/tasks/tlc-04/ground-truth/sensitivity_checks.csv

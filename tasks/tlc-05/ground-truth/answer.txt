@@ -1,0 +1,182 @@
+HOW WELL SPECIALIZED RIDE OPTIONS APPEAR TO WORK
+NYC TLC reported completed trips, April 2026
+
+BOTTOM LINE
+The high-volume FHV (HVFHV) file contains 20,995,953 completed trips with April pickup times. Shared rides were requested on 419,341 trips (2.00% of HVFHV trips), and 255,458 were marked as matched: 60.92% (60.77%-61.07%) of requests. Wheelchair-accessible-vehicle (WAV) rides were requested on 65,246 trips (0.31%), with 65,246 marked as matched: 100.00% (99.99%-100.00%).
+On the supplied completed-trip indicators, shared matching was mixed and WAV matching was high. These are not fulfillment rates for all app requests: canceled requests and requests that never became completed trips are absent. The results therefore describe how recorded completed trips were labeled, not whether every New Yorker who sought either option received it.
+
+DATA, ELIGIBILITY, AND DEFINITIONS
+I analyzed the supplied April 2026 HVFHV, regular-FHV, and taxi-zone files. The primary denominator is 20,995,953 HVFHV rows with pickup timestamps from 2026-04-01 through 2026-04-30. The source had 20,995,953 rows: 0 lacked a parseable pickup time and 0 had a non-April pickup. Eligible pickup timestamps ran from 2026-04-01 00:00:00 to 2026-04-30 23:59:59.
+A shared request is shared_request_flag=Y; a shared success is shared_match_flag=Y within those requests, meaning a separately booked co-rider was matched. A WAV request is wav_request_flag=Y, while wav_match_flag=Y means the trip was provided in a WAV. Thus a WAV match without a WAV request can legitimately represent a WAV serving a rider who did not request one; it is not counted in request-to-match success. Access-A-Ride (AAR) is a separate trip-volume flag, not a request-success outcome.
+Match-rate confidence intervals are Wilson 95% intervals. They describe precision of the monthly proportion, not uncertainty from missing/canceled requests. Pickup geography comes from the supplied taxi-zone lookup. Wait is request-to-pickup; valid values are chronological and 0-120 minutes. Request-to-on-scene and on-scene-to-pickup use the same chronological rule (boarding capped at 30 minutes). Ride duration must be positive and no more than 240 minutes. Per-mile measures require 0.5-200 miles and a derived 1-80 mph; fare summaries require positive base passenger fare.
+
+Flag-value audit (eligible HVFHV rows):
+Field           Observed value counts    
+--------------  -------------------------
+shared request  N=20,576,612, Y=419,341  
+shared match    N=20,739,712, Y=256,241  
+Access-A-Ride   N=20,975,176, Y=20,777   
+WAV request     N=20,930,707, Y=65,246   
+WAV match       N=19,029,333, Y=1,966,620
+
+Cross-flag audit: shared had 783 match-without-request rows, which were not counted as request successes. WAV had 1,901,374 trips provided in a WAV without a recorded WAV request; together with requested-and-provided trips, 1,966,620 trips (9.37%) were provided in WAVs. Requested rows with neither Y nor N outcome numbered 0 shared and 0 WAV. Confirmed unmatched counts were 163,883 shared and 0 WAV.
+
+CITYWIDE SERVICE EVIDENCE
+Shared service performance (matched and confirmed-unmatched requests; ordinary trips are a broad benchmark):
+Group                     Trips       Wait n      Wait med/p90  Scene med/p90           Board med/p90           Ride med/p90              Min/mi med/p90            MPH med  Fare med/p90                  Fare/mi med/p90            
+------------------------  ----------  ----------  ------------  ----------------------  ----------------------  ------------------------  ------------------------  -------  ----------------------------  ---------------------------
+Matched shared request    255,458     246,852     6.8/14.2      6.0/13.4 (n=246,544)    0.6/2.0 (n=255,431)     30.0/53.0 (n=255,454)     4.81/7.30 (n=255,152)     12.5     $21.22/$38.54 (n=255,431)     $3.34/$5.47 (n=255,132)    
+Unmatched shared request  163,883     156,452     5.1/9.7       4.3/9.0 (n=155,197)     0.6/2.0 (n=163,692)     16.3/36.4 (n=163,883)     4.69/7.74 (n=162,088)     12.8     $15.87/$36.24 (n=163,867)     $4.45/$7.84 (n=162,073)    
+Ordinary HVFHV benchmark  20,493,074  20,254,895  4.0/9.2       3.2/8.3 (n=20,164,214)  0.7/2.0 (n=20,483,141)  15.8/37.0 (n=20,492,864)  5.34/8.94 (n=20,207,323)  11.2     $19.70/$54.20 (n=20,467,592)  $6.65/$12.11 (n=20,183,020)
+
+The matched median was 1.6 minutes longer than the confirmed-unmatched median (6.8 versus 5.1 minutes).
+Shared matched versus confirmed-unmatched medians were: ride time 30.0 versus 16.3 minutes; minutes/mile 4.81 versus 4.69; base fare $21.22 versus $15.87; and base fare/mile $3.34 versus $4.45. These are unadjusted observed comparisons, not detour or savings estimates.
+
+Accessible/WAV service performance:
+Group                     Trips       Wait n      Wait med/p90  Scene med/p90           Board med/p90           Ride med/p90              Min/mi med/p90            MPH med  Fare med/p90                  Fare/mi med/p90            
+------------------------  ----------  ----------  ------------  ----------------------  ----------------------  ------------------------  ------------------------  -------  ----------------------------  ---------------------------
+Matched WAV request       65,246      50,512      7.1/12.5      4.4/8.7 (n=49,606)      1.4/5.7 (n=65,172)      19.8/43.3 (n=65,244)      6.99/12.34 (n=63,301)     8.6      $19.70/$50.18 (n=65,178)      $6.95/$11.43 (n=63,262)    
+Ordinary HVFHV benchmark  20,493,074  20,254,895  4.0/9.2       3.2/8.3 (n=20,164,214)  0.7/2.0 (n=20,483,141)  15.8/37.0 (n=20,492,864)  5.34/8.94 (n=20,207,323)  11.2     $19.70/$54.20 (n=20,467,592)  $6.65/$12.11 (n=20,183,020)
+
+A matched-versus-unmatched median-wait comparison for WAV requests was not available.
+No complete matched-versus-unmatched ride comparison was available for WAV.
+Operationally, 96.63% of matched shared trips and 77.42% of matched WAV-request trips had a wait inside the validity rule. Every one of the 65,246 completed trips with a WAV request was marked as provided in a WAV, but its valid median wait was 7.1 minutes (p90 12.5), 3.1 minutes above the ordinary benchmark. WAV-request trips also had median 6.99 minutes/mile versus 5.34 ordinarily, and base fare/mile $6.95 versus $6.65. Those gaps may indicate a different pickup/ride experience, but route and rider mix are uncontrolled.
+For context, ordinary HVFHV trips had a median request-to-pickup wait of 4.0 minutes (p90 9.2) among 20,254,895 valid waits. This broad benchmark is not matched on route, provider, rider, or time and should not be read as a causal service penalty.
+
+GEOGRAPHIC DIFFERENCES
+Borough rows below use pickup borough. Request share is requests/all HVFHV pickups in that borough; match rate includes its Wilson 95% interval. Wait columns are medians in minutes for matched and confirmed-unmatched requests.
+
+Shared by pickup borough:
+Subgroup       All trips  Requests  Req share  Matches  Match rate (95% CI)     Wait M/U
+-------------  ---------  --------  ---------  -------  ----------------------  --------
+Manhattan      7,635,272  120,486   1.58%      75,457   62.63% (62.35%-62.90%)  6.5/4.7 
+Brooklyn       5,609,335  148,061   2.64%      101,964  68.87% (68.63%-69.10%)  6.8/5.0 
+Queens         4,551,421  104,569   2.30%      54,564   52.18% (51.88%-52.48%)  7.1/5.6 
+Bronx          2,859,783  43,818    1.53%      22,918   52.30% (51.83%-52.77%)  6.5/5.2 
+Staten Island  339,120    2,389     0.70%      553      23.15% (21.50%-24.88%)  6.8/6.0 
+N/A            1,020      18        1.76%      2        11.11% (3.10%-32.80%)   12.3/8.8
+EWR            2          0         0.00%      0        NA                      NA/NA   
+
+WAV by pickup borough:
+Subgroup       All trips  Requests  Req share  Matches  Match rate (95% CI)       Wait M/U
+-------------  ---------  --------  ---------  -------  ------------------------  --------
+Manhattan      7,635,272  24,579    0.32%      24,579   100.00% (99.98%-100.00%)  6.8/NA  
+Brooklyn       5,609,335  18,904    0.34%      18,904   100.00% (99.98%-100.00%)  7.1/NA  
+Queens         4,551,421  10,907    0.24%      10,907   100.00% (99.96%-100.00%)  7.2/NA  
+Bronx          2,859,783  9,836     0.34%      9,836    100.00% (99.96%-100.00%)  7.9/NA  
+Staten Island  339,120    1,016     0.30%      1,016    100.00% (99.62%-100.00%)  7.5/NA  
+N/A            1,020      4         0.39%      4        100.00% (51.01%-100.00%)  20.4/NA 
+EWR            2          0         0.00%      0        NA                        NA/NA   
+The clearest shared geographic gap was Brooklyn at 68.87% versus Staten Island at 23.15%, a 45.72 percentage-point spread. All five boroughs recorded 100% WAV provision among completed WAV requests, so wait was more informative: the WAV median ranged from 6.8 minutes in Manhattan to 7.9 in Bronx.
+
+Shared zone comparison (only zones with at least 100 requests):
+Lowest recorded match rates:
+Pickup zone                                  Requests  Matches  Match rate (95% CI)     Matched wait
+-------------------------------------------  --------  -------  ----------------------  ------------
+Staten Island / South Beach/Dongan Hills     137       25       18.25% (12.68%-25.55%)  6.1         
+Staten Island / Mariners Harbor              193       36       18.65% (13.79%-24.74%)  6.2         
+Staten Island / Heartland Village/Todt Hill  124       25       20.16% (14.05%-28.07%)  7.4         
+Highest recorded match rates:
+Pickup zone                    Requests  Matches  Match rate (95% CI)     Matched wait
+-----------------------------  --------  -------  ----------------------  ------------
+Brooklyn / Stuyvesant Heights  5,177     3,978    76.84% (75.67%-77.97%)  7.7         
+Brooklyn / Bushwick North      5,267     4,039    76.69% (75.52%-77.81%)  7.0         
+Brooklyn / Erasmus             3,225     2,466    76.47% (74.97%-77.90%)  6.6         
+Zone intervals quantify denominator size but do not adjust for differences in provider, trip mix, or rider demand.
+
+WAV zone comparison (only zones with at least 30 requests):
+All 232 qualifying zones had the same 100.00% recorded match rate; there is no meaningful high/low match-rate ranking. Median matched waits varied as follows.
+Shortest median waits:
+Pickup zone                Requests  Matches  Match rate (95% CI)       Matched wait
+-------------------------  --------  -------  ------------------------  ------------
+Queens / South Ozone Park  368       368      100.00% (98.97%-100.00%)  3.6         
+Queens / Rockaway Park     152       152      100.00% (97.54%-100.00%)  4.6         
+Queens / East Elmhurst     189       189      100.00% (98.01%-100.00%)  5.0         
+Longest median waits:
+Pickup zone                 Requests  Matches  Match rate (95% CI)       Matched wait
+--------------------------  --------  -------  ------------------------  ------------
+Queens / JFK Airport        423       423      100.00% (99.10%-100.00%)  10.6        
+Queens / LaGuardia Airport  274       274      100.00% (98.62%-100.00%)  10.5        
+Bronx / Woodlawn/Wakefield  95        95       100.00% (96.11%-100.00%)  9.5         
+Zone intervals quantify denominator size but do not adjust for differences in provider, trip mix, or rider demand.
+
+TEMPORAL AND PROVIDER DIFFERENCES
+Shared by weekday/weekend:
+Subgroup  All trips   Requests  Req share  Matches  Match rate (95% CI)     Wait M/U
+--------  ----------  --------  ---------  -------  ----------------------  --------
+Weekday   14,785,026  274,671   1.86%      156,829  57.10% (56.91%-57.28%)  6.6/5.0 
+Weekend   6,210,927   144,670   2.33%      98,629   68.18% (67.93%-68.41%)  7.0/5.5 
+
+WAV by weekday/weekend:
+Subgroup  All trips   Requests  Req share  Matches  Match rate (95% CI)       Wait M/U
+--------  ----------  --------  ---------  -------  ------------------------  --------
+Weekday   14,785,026  52,763    0.36%      52,763   100.00% (99.99%-100.00%)  7.0/NA  
+Weekend   6,210,927   12,483    0.20%      12,483   100.00% (99.97%-100.00%)  7.4/NA  
+
+Shared by pickup-time band:
+Subgroup            All trips  Requests  Req share  Matches  Match rate (95% CI)     Wait M/U
+------------------  ---------  --------  ---------  -------  ----------------------  --------
+Overnight 00-05     2,574,424  86,444    3.36%      58,508   67.68% (67.37%-67.99%)  7.1/5.6 
+Morning 06-09       3,618,751  79,867    2.21%      48,603   60.85% (60.52%-61.19%)  6.7/5.1 
+Midday 10-15        5,773,240  78,834    1.37%      38,588   48.95% (48.60%-49.30%)  6.4/5.0 
+Evening peak 16-19  4,617,755  70,684    1.53%      38,124   53.94% (53.57%-54.30%)  6.3/4.7 
+Late evening 20-23  4,411,783  103,512   2.35%      71,635   69.20% (68.92%-69.49%)  7.0/5.3 
+
+WAV by pickup-time band:
+Subgroup            All trips  Requests  Req share  Matches  Match rate (95% CI)       Wait M/U
+------------------  ---------  --------  ---------  -------  ------------------------  --------
+Overnight 00-05     2,574,424  2,412     0.09%      2,412    100.00% (99.84%-100.00%)  7.3/NA  
+Morning 06-09       3,618,751  8,892     0.25%      8,892    100.00% (99.96%-100.00%)  7.2/NA  
+Midday 10-15        5,773,240  33,424    0.58%      33,424   100.00% (99.99%-100.00%)  7.0/NA  
+Evening peak 16-19  4,617,755  13,851    0.30%      13,851   100.00% (99.97%-100.00%)  6.9/NA  
+Late evening 20-23  4,411,783  6,667     0.15%      6,667    100.00% (99.94%-100.00%)  7.2/NA  
+Shared matching was 68.18% on weekends versus 57.10% on weekdays (11.08 percentage points higher). By time band it ranged from 48.95% in Midday 10-15 to 69.20% in Late evening 20-23. WAV provision remained 100% among completed WAV requests in every band, while request intensity ranged from 0.09% in Overnight 00-05 to 0.58% in Midday 10-15; WAV median waits varied by less than half a minute across the five bands.
+
+Shared daily check (dates with at least 100 requests): the lowest match rate was 45.17% on 2026-04-01 (3,651/8,083); the highest was 71.16% on 2026-04-25 (17,752/24,945). These are isolated monthly extremes, not a trend.
+WAV daily check: all 30 dates with at least 10 requests had the same 100.00% recorded match rate, so there was no daily match-rate variation.
+
+Shared by HVFHV license code:
+Subgroup  All trips   Requests  Req share  Matches  Match rate (95% CI)     Wait M/U
+--------  ----------  --------  ---------  -------  ----------------------  --------
+HV0003    15,378,858  417,403   2.71%      255,385  61.18% (61.04%-61.33%)  6.8/5.1 
+HV0005    5,617,095   1,938     0.03%      73       3.77% (3.01%-4.71%)     6.9/6.0 
+
+WAV by HVFHV license code:
+Subgroup  All trips   Requests  Req share  Matches  Match rate (95% CI)       Wait M/U
+--------  ----------  --------  ---------  -------  ------------------------  --------
+HV0003    15,378,858  42,326    0.28%      42,326   100.00% (99.99%-100.00%)  7.3/NA  
+HV0005    5,617,095   22,920    0.41%      22,920   100.00% (99.98%-100.00%)  6.2/NA  
+Provider was the largest observed shared split: HV0003 matched 61.18% of 417,403 requests, versus 3.77% of 1,938 for HV0005. All provider codes nevertheless recorded 100% WAV provision among completed WAV requests.
+The supplied data do not document company names, so license codes are left unlabeled. Provider differences can also reflect different markets, geography, and reporting practices.
+
+ACCESS-A-RIDE AND REGULAR-FHV CONTEXT
+The AAR flag identified 20,777 HVFHV trips (0.10%). Of these, 2,357 also had a WAV request, 4,224 were provided in a WAV (including provision without a request), and 128 had a shared request. Among 20,545 AAR rows with a valid wait, median request-to-pickup time was 4.7 minutes and p90 was 9.9. This is volume and recorded-trip timing, not evidence that all AAR demand was met.
+AAR by pickup borough:
+Borough        Trips  Share   Median wait
+-------------  -----  ------  -----------
+Manhattan      6,222  29.95%  4.7        
+Brooklyn       6,043  29.09%  4.7        
+Bronx          4,110  19.78%  4.8        
+Queens         3,814  18.36%  4.6        
+Staten Island  588    2.83%   5.2        
+AAR by pickup-time band:
+Time band           Trips  Share 
+------------------  -----  ------
+Midday 10-15        8,765  42.19%
+Evening peak 16-19  5,380  25.89%
+Morning 06-09       3,317  15.96%
+Late evening 20-23  2,421  11.65%
+Overnight 00-05     894    4.30% 
+The regular-FHV file had 2,125,630 April-pickup rows out of 2,125,630; 0 lacked a parseable pickup and 0 were outside April. Its SR_Flag profile was: <blank>=2,125,630.
+Only 0 trips had a positive SR_Flag value (1/Y/YES/TRUE), 0.00% of all April regular-FHV rows. This is a count of positively identified shared trips, not a request or match rate: blank/unknown rows are not confirmed non-shared demand, and this file has no request, wait, fare, WAV, or match fields.
+
+LIMITATIONS
+1. Completed-trip selection is the main limitation. The files omit app requests that were canceled, rejected, or never dispatched. A high match fraction among completed trips can coexist with poor population-level availability. No response-time service standard or external benchmark is supplied.
+2. Flags are operator-reported service indicators. A shared_match Y does not reveal added detour, promised discount, or whether the matched passenger actually boarded. A WAV_match Y does not establish the rider's disability, vehicle condition, boarding success, or accessibility quality. AAR Y is not a request denominator.
+3. Wait starts at the recorded request time and is available only for completed HVFHV trips. On-scene time has provider-dependent missingness. Fare is base passenger fare, not a standardized rider bill; the data do not identify quoted prices or discounts. Minutes/mile and fare/mile reduce but do not remove route mix, traffic, toll, airport, surge, or provider differences.
+4. Data-quality exclusions are metric-specific. Among April HVFHV rows, 0 lacked request time, 0 lacked dropoff time, 268,958 had request after pickup, 0 had dropoff before pickup, 0 lacked pickup location, 0 had an unmapped location, 29 had nonpositive trip_time, 1,857 had nonpositive miles, and 25,604 had nonpositive base fare. Flag-valid rows remain in request/match denominators even when excluded from a performance metric.
+5. Geography is pickup zone, not rider residence; airport/EWR and unknown zones are retained. Zone rankings require at least 100 shared or 30 WAV requests, but multiple comparisons and unmeasured composition remain. Time comparisons use local recorded pickup times.
+6. This is one month (April 2026). Daily extremes are descriptive, not a trend or seasonality estimate. Yellow and green files have no comparable shared-request, WAV, or AAR fields; passenger_count was not used as a proxy because a party traveling together is not necessarily a pooled or accessible-service trip.
+
+ASSESSMENT
+Within the limited universe of recorded completed HVFHV trips, the strongest evidence is the shared request-to-match rate of 60.92% and WAV rate of 100.00%, alongside the reported wait, geographic, time, and provider differences above. These indicators can show whether specialized labels on completed rides commonly culminated in a match and whether those rides look operationally slower or more costly. They cannot establish equitable access or overall success for New Yorkers without all-request, cancellation, vehicle-supply, rider-needs, promised-versus-actual service, and satisfaction data.

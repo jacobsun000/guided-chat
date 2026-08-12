@@ -1,0 +1,76 @@
+RISKS COMPANIES ARE EMPHASIZING
+June 2026 SEC financial-statement-notes release
+
+SCOPE AND INTERPRETATION
+
+The release contains 7,292 filings from 4,026 CIKs filed June 1-30, 2026, including 5,326 Form 8-Ks, 718 Form 11-Ks, 306 Form 10-Qs, 130 Form 10-Ks and 33 Form 20-Fs. Of 299,214 English-language text facts, I retained substantive risk-, uncertainty-, concentration-, contingency- or going-concern-related text blocks, cleaned markup, and removed normalized duplicates within each filing.
+
+The resulting corpus has 3,770 operating-company disclosure blocks from 629 filings and 556 registrants. Funds (2,512 blocks; 99 registrants) and employee plans (796 blocks; 535 registrants) were analyzed separately because their long, standardized investment-risk language would otherwise dominate the results. “Emphasizing” below means recurring or unusually specific current disclosure, not a demonstrated increase from an earlier year.
+
+MAIN OPERATING-COMPANY THEMES
+
+The counts in parentheses are unique operating-company registrants with at least one dictionary match, out of the 556 with retained risk text. Themes are multi-label. They are descriptive hit rates within the selected corpus—not estimates for all public companies.
+
+1. Legal, regulatory, tax and compliance exposure (446; 80%).
+
+This was the most frequently captured category, reflecting litigation and investigations, product liability, intellectual-property disputes, changing regulation, and uncertain tax positions. Standard XBRL tags for contingencies and income taxes also make this theme easier to capture than less consistently tagged risks.
+
+Medtronic’s June 18 Form 10-K (accession 0001628280-26-044354) is a specific example: it reported $113 million of litigation charges in fiscal 2026 and approximately $0.2 billion of accrued litigation at April 24, 2026, while warning that ultimate costs could differ materially. CrowdStrike’s June 4 Form 10-Q (0001535527-26-000025) connected a concrete operating event—the July 19, 2024 Falcon update that crashed certain Windows systems—to airline, securities and derivative litigation. These are more informative than routine disclosures stating only that ordinary-course claims are not expected to be material.
+
+2. Liquidity, financing, leverage and going concern (319; 57%).
+
+The sharpest disclosures came from loss-making or highly leveraged issuers and quantified cash, working-capital, maturity and refinancing gaps. Beneficient’s June 30 Form 10-K (0001775734-26-000018) reported a $2.1 billion accumulated deficit, only about $2.7 million of unrestricted cash at May 31, roughly $96.7 million of related-party borrowings scheduled to mature within 12 months, and a roughly $67.9 million arbitration award including interest. It concluded that these conditions raised substantial doubt and that more capital or asset monetization would be needed.
+
+Borealis Foods’ June 2 Form 10-K (0001213900-26-063777) reported a $19.0 million net loss, about $64,000 of cash and $61.8 million of negative working capital at year-end. A subsequent related-party facility improved the maturity profile, but management’s plans remained partly outside its control and substantial doubt remained. These disclosures emphasize financing availability and execution, not merely accounting uncertainty.
+
+3. Supply chain, input costs and concentrations (259; 47%).
+
+Companies emphasized single-source suppliers and sites, commodity-price exposure, and concentrations in customers, receivables or cash deposits. J.M. Smucker’s June 9 Form 10-K (0000091419-26-000050) identified primary or single sources for packaging and finished goods such as K-Cup pods and Pup-Peroni snacks, as well as single-site production for much of its coffee, Milk-Bone snacks and fruit spreads. It also described derivatives used for green coffee, wheat, edible oils, corn, diesel and natural-gas costs.
+
+Beyond Air’s June 26 Form 10-K (0001493152-26-030287) was unusually quantitative: approximately 74% and 18% of fiscal-2026 material purchases came from two vendors, while two customers supplied 11% and 10% of revenue. Its risk note also says some suppliers are single-source. The nature of “concentration” matters: BARK reported no customer at 10% of annual revenue, yet two customers represented 42% of gross receivables at March 31, 2026. Receivables concentration is therefore not automatically the same as revenue dependence.
+
+4. Macroeconomic conditions, rates, currency and demand (214; 39%).
+
+The disclosures connect inflation, interest rates, foreign exchange, market volatility and weaker demand to company-specific channels. Honda’s June 18 Form 20-F (0001193125-26-274991) estimated that a 1% yen appreciation against the U.S. dollar would reduce 2026 profit before tax by ¥2.046 billion. Ryanair’s June 22 Form 20-F (0001104659-26-076131) linked dollar exposure to Boeing aircraft and jet-fuel purchases and reported a €2.028 billion net asset associated with fuel and carbon commodity derivatives at March 31, 2026. These sensitivity and hedging disclosures carry more information than generic references to “economic uncertainty.”
+
+5. Technology, cybersecurity, privacy and AI (206; 37%).
+
+The clearest emphasis was often on governance, third parties and resilience rather than a realized material loss. Toyota Motor Credit’s June 2 Form 10-K (0001193125-26-252796) called cybersecurity one of its top operational risks, described testing and third-party reviews, and said third-party incidents had caused minor adverse effects but no material losses or consequences. Karooooo’s June 9 Form 20-F (0001213900-26-066795) described vulnerability assessments, incident simulations and staff training that includes ransomware and AI-enabled attacks, together with ISO/IEC 27001, 27017 and 27018 certifications. These examples also show that extensive controls do not eliminate the underlying threat.
+
+6. Competition, execution and key-person dependence (116; 21%).
+
+This theme is especially prominent among development-stage technology, medical-device and biotechnology companies. Beyond Air grouped technological innovation, regulatory approval, key personnel, proprietary technology, market acceptance, single-source suppliers and future financing in one interconnected risk disclosure. Odyssey Therapeutics’ June 17 Form 10-Q (0001193125-26-274290) said its candidates require extensive preclinical and clinical work, regulatory approval, substantial additional capital, personnel and infrastructure, and that significant product revenue remains uncertain even if development succeeds. For such issuers, “execution risk” is a chain of clinical, regulatory, staffing and financing dependencies rather than a single event.
+
+7. Geopolitical, trade and country-specific risk (86; 16%).
+
+This theme varies strongly by operating footprint. GSI Technology’s June 5 Form 10-K (0001104659-26-070962) connected tariffs, export controls and geopolitical tension to Israel-based development and sales activity and to manufacturing and testing concentrated in Taiwan; it also discussed possible disruption arising from U.S.-Taiwan-China relations. Addentax Group’s June 29 Form 10-K (0001493152-26-031055) highlighted political, economic, legal, currency-conversion and remittance risks of PRC operations as materially different from those usually faced in North America and Western Europe. Ryanair, by contrast, incorporated possible expansion of hostilities in Ukraine or the Middle East and greater trade protectionism into downside scenarios.
+
+8. Climate, natural-disaster and public-health disruption (31; 6%).
+
+Explicit current note coverage was less common than legal or financing coverage, but some disclosures were concrete. National Grid’s June 3 Form 20-F (0001004315-26-000006) linked major storms to network-asset damage and current-period repair expense, while noting that qualifying U.S. storm costs may later be recovered through regulated rates. It also identified £267 million of oil- and gas-fired generation assets, with about 3,800 MW of capacity, in its climate-transition and impairment discussion. Jabil’s June 30 Form 10-Q (0001628280-26-046138) reported fiscal-2025 charges associated with damage from Hurricanes Helene and Milton at operations in Florida and North Carolina. Public-health references, by comparison, were often inherited pandemic boilerplate rather than evidence of a new 2026 exposure.
+
+FUNDS AND EMPLOYEE PLANS: A DIFFERENT RISK PROFILE
+
+Investment market, credit, valuation and liquidity risk appeared in 90 of 99 retained fund registrants and 523 of 535 retained employee-plan registrants. Fund prospectuses then layered leverage, regulation, cyber, geopolitics and natural disasters onto the same disclosure. PIMCO Corporate & Income Strategy Fund’s June 4 Form N-2ASR (0001193125-26-257404), for example, contained an approximately 202,000-character risk block covering market-price discounts to NAV, leverage, rates, liquidity, derivatives and many other risks. CIM Real Assets & Credit Fund’s June 5 Form N-CSRS (0001580642-26-003583) specifically discussed the wars in Ukraine and the Middle East, sanctions, supply chains, energy prices, inflation and growth.
+
+Employee-plan wording was much more standardized: investments are exposed to interest-rate, market and credit risks, near-term value changes are reasonably possible, and participant balances could be materially affected. Sleep Number’s June 26 Form 11-K (0000827187-26-000055) is a meaningful exception to the boilerplate. It disclosed that company stock fell 44% during 2025 and another 95% from January 1 through June 15, 2026; applying the later decline at year-end would have reduced the plan’s company-stock value by $3.4 million.
+
+MEANINGFUL VARIATION AND COUNTEREXAMPLES
+
+Risk language does not necessarily imply distress or an unmitigated exposure. National Grid stress-tested downside cash-flow scenarios and still concluded that it had adequate resources and that the going-concern basis was appropriate, unlike Beneficient and Borealis. Smucker disclosed real single-source and single-site dependencies but also said it had not historically experienced significant shortages of key materials. Toyota Motor Credit reported minor third-party cyber effects but no material cyber loss. Honda and Ryanair use derivatives to mitigate measurable currency or commodity exposures. National Grid’s regulated recovery mechanism partially changes the financial effect of storm damage.
+
+Specificity also differs sharply by sector and issuer maturity. Life-science issuers focus on trials, approval, funding and key people; global manufacturers focus on suppliers, sites, currencies and trade; financial and technology firms give more cyber-governance detail; utilities connect physical climate effects to asset accounting and regulation. Quantified concentrations or sensitivities are generally more decision-useful than omnibus lists of hypothetical events.
+
+HOW THE THEMES WERE DERIVED
+
+I joined the June `txt`, `sub` and `tag` files by accession. I retained English text blocks of at least 100 cleaned characters when the XBRL tag/label or opening language explicitly indicated risk, uncertainty, concentration, contingency or going concern. HTML entities and whitespace were normalized, and duplicate normalized text within an accession was counted once. Every retained accession mapped to submission metadata.
+
+Operating companies, funds and employee plans were separated using form, SIC and taxonomy information. A transparent phrase dictionary assigned multiple themes to each disclosure. Counts were then deduplicated to CIK within each theme, so a company with repeated contexts or filings contributed at most once to a theme. Ranked excerpts were manually reviewed for context, and 18 named or candidate accessions were reopened against the source text and submission metadata; false positives such as lease discount rates, option-pricing interest rates, routine ordinary-course litigation and generic SPAC target-search language were not used as representative evidence.
+
+LIMITATIONS
+
+This is a one-month, filing-calendar sample, not a balanced cross-section. The large number of 8-K and 11-K filings and the fiscal calendars of 10-K/10-Q filers shape coverage. The denominator for theme percentages is the 556 operating registrants with retained risk text, not all 4,026 CIKs in the release. Results therefore show what is prominent within captured note disclosures, not economy-wide prevalence.
+
+The notes text dataset does not consistently contain every Form 10-K Item 1A risk factor, cybersecurity item or untagged narrative. Standard tags make contingencies, taxes and going-concern disclosures easier to find than some operational, climate or human-capital risks. Absence from this corpus is not evidence that a company lacks the risk.
+
+Dictionary classification is context-sensitive only through manual review. Long documents are more likely to match many themes; similar boilerplate remains across different registrants; and terms such as “going concern,” “interest rate” or “concentration” can refer to another entity, an accounting input or an investment rather than company distress. Theme percentages are thus directional diagnostics, not statistical estimates or a management ranking of risk severity. Finally, the release does not provide a consistent prior-period risk panel, so it cannot establish that emphasis increased or decreased over time, and disclosure of a possible event does not establish its probability or expected loss.

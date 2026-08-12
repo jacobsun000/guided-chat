@@ -1,0 +1,2 @@
+source_rows,missing_request_timestamp,outside_april,april_rows,ewr_pickups,unknown_zone_pickups,outside_nyc_pickups,unmapped_zone_pickups,excluded_non_nyc_zone_rows,nyc_zone_rows,nyc_missing_wait,nyc_negative_wait,nyc_wait_over_120,primary_valid_rows,valid_under_60_rows
+20995953,0,1703,20994250,2,0,1020,0,1022,20993228,0,268905,27,20724296,20723631
