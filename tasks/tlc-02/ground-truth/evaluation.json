@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Strong, reproducible route-screening reference with explicit leave-one-date-out baselines and conservative multi-part flag thresholds.",
+  "overallScore": 98.1,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 4,
+      "rationale": "Flag formulas, counts, and examples are internally consistent and include absolute, relative, and robust-z requirements."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "Both requested files and all required observed/expected fields, filters, baselines, thresholds, findings, and limitations are supplied."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 4,
+      "rationale": "Service normalization, minimum samples, date-excluded baselines, robust scale floors, and deterministic replay are well specified."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "The CSV has reproducible route keys and rich baseline support; methodology reports reconciled source counts and a checksum."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 3.5,
+      "rationale": "The report correctly calls flags screening signals, though the one-month baseline and event confounding leave substantial residual uncertainty."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Avoids target leakage by excluding the candidate date from its baseline.",
+    "Requires practical effect thresholds in addition to standardized rarity."
+  ],
+  "concerns": [
+    "A one-month history makes weekend expectations especially thin and cannot account for events, weather, or quoted prices."
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "title": "Human–agent baseline evaluation",
+  "purpose": "Compare agent alone, human with a regular LLM chat interface, and human with the guided scaffolding while keeping outcome scoring condition-blind.",
+  "scoring": {
+    "artifactScale": {
+      "min": 0,
+      "max": 4,
+      "anchors": {
+        "0": "Missing or unusable",
+        "1": "Major errors or omissions",
+        "2": "Partly correct; material repair needed",
+        "3": "Sound with minor issues",
+        "4": "Strong, complete, and well supported"
+      }
+    },
+    "overallFormula": "Weighted mean of available artifact ratings, rescaled to 0–100. Missing ratings are not treated as zero.",
+    "blinding": "Artifact raters should not see the experimental condition. Use at least two raters for interpretive tasks and adjudicate disagreements greater than one scale point."
+  },
+  "artifactQuality": [
+    {
+      "id": "correctness",
+      "label": "Correctness",
+      "weight": 0.3,
+      "objective": true,
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold", "reference"],
+      "definition": "Accuracy of claims, calculations, classifications, and the direct answer relative to source data and task-specific checks.",
+      "evidence": "Recompute deterministic outputs where possible; otherwise use blinded expert review against source excerpts and counterexamples."
+    },
+    {
+      "id": "completeness",
+      "label": "Deliverable completeness",
+      "weight": 0.2,
+      "objective": true,
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold", "reference"],
+      "definition": "Coverage of every requested deliverable, required field, comparison, and task sub-question.",
+      "evidence": "Checklist derived from each task prompt."
+    },
+    {
+      "id": "process_validity",
+      "label": "Process validity",
+      "weight": 0.2,
+      "objective": true,
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold", "reference"],
+      "definition": "Validity and reproducibility of filters, mappings, formulas, transformations, baselines, assumptions, and sensitivity tests.",
+      "evidence": "Audit methodology, code or trace, row-count reconciliation, and rerun checks."
+    },
+    {
+      "id": "evidence_traceability",
+      "label": "Evidence & traceability",
+      "weight": 0.15,
+      "objective": true,
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold", "reference"],
+      "definition": "Whether conclusions are supported by inspectable source facts, identifiers, intermediate counts, and reproducible references.",
+      "evidence": "Sample claims back to source rows or filings and verify that reported tables support the narrative."
+    },
+    {
+      "id": "uncertainty_calibration",
+      "label": "Uncertainty & limitations",
+      "weight": 0.15,
+      "objective": true,
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold", "reference"],
+      "definition": "Appropriate qualification of uncertainty, proxy limits, alternative explanations, generalizability, and causal claims.",
+      "evidence": "Check that claim strength matches available evidence and that material limitations are not merely listed but reflected in conclusions."
+    }
+  ],
+  "objectiveStudyMeasures": [
+    {
+      "id": "task_success",
+      "label": "Task success",
+      "unit": "binary",
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold"],
+      "definition": "1 when all mandatory deliverables are present and overall artifact quality is at least 60/100; report the continuous score as primary."
+    },
+    {
+      "id": "total_time_seconds",
+      "label": "Total completion time",
+      "unit": "seconds",
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold"],
+      "definition": "Wall-clock time from task reveal to final submission. Report agent runtime and human active time separately when available."
+    },
+    {
+      "id": "human_active_time_seconds",
+      "label": "Human active time",
+      "unit": "seconds",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "definition": "Time spent typing, reviewing, editing, answering scaffold prompts, or inspecting evidence; exclude idle time."
+    },
+    {
+      "id": "resource_cost",
+      "label": "Resource cost",
+      "unit": "tokens, tool calls, and USD",
+      "appliesTo": ["agent-alone", "human-chat", "human-scaffold"],
+      "definition": "Input/output tokens, tool calls, and estimated model or compute cost."
+    },
+    {
+      "id": "calibration",
+      "label": "Confidence calibration",
+      "unit": "absolute error and Brier score",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "definition": "Before submission, collect a 0–100 probability that the answer passes the rubric. Compare with blinded task success; aggregate absolute calibration error and Brier score across tasks."
+    },
+    {
+      "id": "verification_coverage",
+      "label": "Verification coverage",
+      "unit": "proportion",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "definition": "Pre-register critical claims or steps, then measure the proportion explicitly inspected or recomputed by the human."
+    },
+    {
+      "id": "meaningful_steering_rate",
+      "label": "Meaningful steering rate",
+      "unit": "proportion",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "definition": "Human interventions that change a material assumption, method, evidence choice, or final claim divided by all interventions. Also report errors caught before submission."
+    },
+    {
+      "id": "learning_gain",
+      "label": "Domain learning gain",
+      "unit": "percentage points",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "definition": "Difference between parallel pre-task and post-task domain/process quizzes; score delayed retention separately when feasible."
+    }
+  ],
+  "subjectiveStudyMeasures": [
+    {
+      "id": "confidence",
+      "label": "Confidence in final answer",
+      "scale": "1–7",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "prompt": "I am confident that the submitted answer is correct and well supported."
+    },
+    {
+      "id": "understanding",
+      "label": "Process understanding",
+      "scale": "1–7",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "prompt": "I understand how the main conclusions were produced and could explain the key choices."
+    },
+    {
+      "id": "appropriate_reliance",
+      "label": "Appropriate reliance",
+      "scale": "1–7 plus behavioral score",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "prompt": "I knew which parts of the AI output needed checking rather than accepting them automatically."
+    },
+    {
+      "id": "agency_ownership",
+      "label": "Agency & ownership",
+      "scale": "1–7",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "prompt": "The final answer reflects decisions I understand and endorse."
+    },
+    {
+      "id": "cognitive_load",
+      "label": "Cognitive load",
+      "scale": "NASA-TLX short form, 0–100",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "prompt": "Collect mental demand, effort, frustration, temporal demand, performance, and physical demand; pre-register the short-form scoring rule."
+    },
+    {
+      "id": "usability",
+      "label": "Usability",
+      "scale": "SUS, 0–100",
+      "appliesTo": ["human-chat", "human-scaffold"],
+      "prompt": "Administer the standard 10-item System Usability Scale after each interface condition."
+    }
+  ],
+  "reporting": [
+    "Report per-task scores and a participant-clustered aggregate; do not pool away task or dataset effects.",
+    "For objective outcomes, compare paired conditions with confidence intervals and effect sizes in the counterbalanced within-subject design.",
+    "Treat time and cost as trade-offs rather than folding them into artifact quality; present a quality–time Pareto view.",
+    "Report subjective measures only for human conditions and mark agent-alone values not applicable, never zero.",
+    "Separate missing telemetry from observed zero and retain raw ratings alongside aggregates."
+  ]
+}

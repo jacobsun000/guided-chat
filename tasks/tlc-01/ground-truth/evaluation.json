@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Excellent reference analysis: the tipping measure, eligibility funnel, comparisons, sensitivity checks, and payment-data caveats directly support the answer.",
+  "overallScore": 100.0,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 4,
+      "rationale": "Claims and displayed comparisons are internally consistent, with robust and standardized checks supporting the main patterns."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "The requested definition, counts, summaries, answer, comparisons, and payment/data-quality limitations are all present."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 4,
+      "rationale": "Sequential eligibility, multiple tip measures, composition standardization, and tail sensitivity are explicit and reproducible."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Counts reconcile and conclusions trace to detailed condition tables and source-file definitions."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "The report clearly limits inference to card-recorded tips, one month, and descriptive associations."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Separates relative generosity, tip dollars, and positive-tip frequency.",
+    "Uses composition and tail checks rather than relying on raw means."
+  ],
+  "concerns": [
+    "No external rerun was performed for this artifact-only review."
+  ]
+}

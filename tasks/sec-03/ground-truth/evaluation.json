@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Strong one-month thematic synthesis with representative disclosures, separate fund/plan treatment, and careful interpretation limits; prevalence remains dictionary- and sample-dependent.",
+  "overallScore": 93.8,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 3.5,
+      "rationale": "Named examples are specific and internally supported, while theme frequencies are plausible but not independently validated against a labeled sample."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "Themes, representative companies, derivation, variation, counterexamples, coverage, and limitations are all supplied."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 3.5,
+      "rationale": "Deduplication, multi-label dictionaries, cohort separation, and manual review are reasonable; precision/recall or inter-rater validation is not reported."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Counts define denominators and named examples include accession numbers and quantitative excerpts."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "The answer clearly says emphasis is not temporal increase, absence is not no risk, and frequencies are not economy-wide prevalence."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Separates standardized fund and employee-plan language from operating-company disclosures.",
+    "Uses counterexamples to distinguish exposure disclosure from distress or lack of mitigation."
+  ],
+  "concerns": [
+    "Dictionary theme quality should be reported on a blinded labeled sample, especially for long-document and standard-tag selection bias."
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "rubricVersion": "baseline-v1",
+  "scope": "Artifact-only review of TLC and SEC ground-truth folders",
+  "caveat": "Scores assess submitted artifacts by internal consistency, prompt coverage, and reported validation. Runtime telemetry, human ratings, learning, and independent source reruns were unavailable.",
+  "results": [
+    {
+      "taskId": "tlc-01",
+      "evaluationId": "ground-truth",
+      "overallScore": 100.0,
+      "assessment": "Excellent tipping analysis with reconciled eligibility, robust comparisons, composition checks, and appropriate card-tip limitations."
+    },
+    {
+      "taskId": "tlc-02",
+      "evaluationId": "ground-truth",
+      "overallScore": 98.1,
+      "assessment": "Strong route screen with date-excluded baselines and practical thresholds; one-month expectations remain confounded and thin."
+    },
+    {
+      "taskId": "tlc-03",
+      "evaluationId": "ground-truth",
+      "overallScore": 90.0,
+      "assessment": "Highly traceable anomaly screen, but dominant accounting and event-order categories need stronger source-semantic calibration."
+    },
+    {
+      "taskId": "tlc-04",
+      "evaluationId": "ground-truth",
+      "overallScore": 100.0,
+      "assessment": "Excellent proxy-aware availability study with persistence, counterexamples, provider checks, and bounded recommendations."
+    },
+    {
+      "taskId": "tlc-05",
+      "evaluationId": "ground-truth",
+      "overallScore": 96.3,
+      "assessment": "Thorough specialized-service analysis; completed-trip selection prevents population-level fulfillment claims."
+    },
+    {
+      "taskId": "sec-01",
+      "evaluationId": "ground-truth",
+      "overallScore": 100.0,
+      "assessment": "Excellent precision-aware XBRL calculation audit with conservative context matching and clear issue framing."
+    },
+    {
+      "taskId": "sec-02",
+      "evaluationId": "ground-truth",
+      "overallScore": 90.0,
+      "assessment": "Technically strong trend extraction, but tiny revenue denominators dominate the ranking and weaken economic interpretation."
+    },
+    {
+      "taskId": "sec-03",
+      "evaluationId": "ground-truth",
+      "overallScore": 93.8,
+      "assessment": "Strong one-month risk synthesis; theme prevalence needs labeled-sample validation for dictionary and document-length bias."
+    },
+    {
+      "taskId": "sec-04",
+      "evaluationId": "ground-truth",
+      "overallScore": 100.0,
+      "assessment": "Excellent separation of technical alignment, mapping confidence, semantic family, and economic comparability."
+    },
+    {
+      "taskId": "sec-05",
+      "evaluationId": "ground-truth",
+      "overallScore": 93.8,
+      "assessment": "Clear four-retailer stress ranking; coarse peer percentiles and omitted financing context limit generalization."
+    }
+  ]
+}

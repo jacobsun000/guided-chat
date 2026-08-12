@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Comprehensive anomaly screen with excellent traceability, but two dominant categories depend on source-field semantics and likely include many systematic false positives.",
+  "overallScore": 90.0,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 3,
+      "rationale": "Most hard checks are compelling, but the 746,639 reconciliation flags and 362,125 event-sequence flags rely on assumptions that the report itself shows can reflect systematic field semantics or workflow timing."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "The CSV and methodology cover reproducible references, categories, trigger values, counts, manual checks, and false-positive caveats."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 3.5,
+      "rationale": "Rules are explicit and conservative overall, with source re-reads and deterministic validation; selected accounting and event-order rules need stronger semantic validation."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Source file, source row, fingerprints, trigger JSON, category counts, and reread examples provide unusually strong auditability."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "The output consistently distinguishes suspicious records from fraud and discusses category-specific alternative explanations."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Every flag is tied to a reproducible row and machine-readable trigger.",
+    "Manual rereads reveal when a large category is systematic incompleteness rather than independent misconduct."
+  ],
+  "concerns": [
+    "The two largest rule families should be calibrated against authoritative vendor/event definitions before being treated as data errors."
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Thorough specialized-service assessment with strong subgroup evidence; its main constraint is that match rates among completed trips cannot estimate request fulfillment for New Yorkers overall.",
+  "overallScore": 96.3,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 3.5,
+      "rationale": "The completed-trip calculations are coherent, but the headline 100% WAV match is structurally selected and cannot answer population-level availability without canceled or unfulfilled requests."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "Methods, metrics, comparisons, citywide evidence, geography, time, provider variation, context, and limitations are all present."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 4,
+      "rationale": "Flag definitions, validity windows, confidence intervals, denominator audits, and metric-specific filters are explicit."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Counts, cross-flag audits, subgroup sample sizes, and source field definitions make the conclusions traceable."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "Selection bias and the limits of operator-reported match flags are prominently and correctly reflected in the assessment."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Audits match-without-request rows instead of silently changing denominators.",
+    "Uses wait and geographic variation when WAV match labels have no variation."
+  ],
+  "concerns": [
+    "The task wording is broader than completed-trip indicators can resolve; all-request and cancellation data are essential."
+  ]
+}

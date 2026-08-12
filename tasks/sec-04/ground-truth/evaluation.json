@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Excellent comparability reference that separates technical alignment, mapping confidence, semantic families, and economic comparability.",
+  "overallScore": 100.0,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 4,
+      "rationale": "Selection counts, tiers, families, and validation examples are internally consistent and directly answer the comparability question."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "The requested fact-level CSV and methodology include tags, periods, units, dimensions, mappings, assessments, findings, and limitations."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 4,
+      "rationale": "Strict annual/consolidated filtering, explicit mappings, reviewed custom overrides, tie rejection, and tiering are methodologically sound."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Every row retains accession, source release, fact context, taxonomy metadata, mapping rationale, and comparability reasons."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "The report correctly limits conclusions for fiscal calendars, currencies, business models, recognition policies, and selection bias."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Does not confuse a high-confidence tag mapping with high economic comparability.",
+    "Rejects dimensional components rather than summing them into an invented consolidated total."
+  ],
+  "concerns": [
+    "No external rerun was performed for this artifact-only review."
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Excellent calculation-linkbase audit with precision-aware tolerances, strict context matching, conservative exclusions, and clear traceability.",
+  "overallScore": 100.0,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 4,
+      "rationale": "Decimal arithmetic, signed relationships, reported-minus-reconstructed differences, and examples are internally consistent."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "The CSV schema and methodology cover rules, tolerances, validation, coverage, and caveats as requested."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 4,
+      "rationale": "Exact concept versions, complete contexts, duplicate handling, dimensional equality, and precision-derived tolerances form a defensible audit."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Accessions, statements, periods, values, units, issue types, coverage counts, and representative controls support reproduction."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "Flags are appropriately framed as XBRL inconsistencies rather than proven accounting misstatements."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Uses filer-supplied calculation arcs rather than unreliable line-order heuristics.",
+    "Treats missing children as unknown and ties tolerance to reported XBRL precision."
+  ],
+  "concerns": [
+    "No external rerun was performed for this artifact-only review."
+  ]
+}

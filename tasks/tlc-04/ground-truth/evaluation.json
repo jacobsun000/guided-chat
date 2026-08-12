@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Excellent proxy-aware availability analysis that combines impact, severity, persistence, counterexamples, provider checks, and alternative explanations.",
+  "overallScore": 100.0,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 4,
+      "rationale": "Reported signals are internally consistent and the conclusions stay within what completed-trip wait data can support."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "Places, times, proxies, evidence, contradictions, recommendations, and limitations are all addressed in depth."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 4,
+      "rationale": "Cleaning, matched city baselines, minimum cells, impact/severity rankings, persistence, provider, on-scene, and cutoff checks are well designed."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Headline claims trace to cell-level metrics and named supporting CSVs with reconciled audit counts."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "The report repeatedly distinguishes fulfilled demand and drop-off proxies from latent need and actual fleet supply."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Counterexamples directly test and reject a simplistic high-demand-equals-shortage interpretation.",
+    "Separates airport operations and distinguishes observations from recommendations."
+  ],
+  "concerns": [
+    "No external rerun was performed for this artifact-only review."
+  ]
+}

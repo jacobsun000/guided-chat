@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Clear and traceable four-retailer stress ranking with useful sensitivities; conclusions are robust only within a small, manually chosen peer set and simplified obligation model.",
+  "overallScore": 93.8,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 3.5,
+      "rationale": "Filed metrics and score arithmetic support the within-peer ranking, but coarse percentiles and omitted maturities, credit access, and current lease obligations limit broader resilience claims."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "Ranking, peer set, criteria, filing metrics, source tags, alternative weighting, stress scenario, and uncertainty are all included."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 3.5,
+      "rationale": "Context alignment and transparent formulas are strong; four-company rank scoring is mechanically coarse and the uniform CFO shock preserves most orderings by construction."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Raw facts, accessions, tags, periods, derived ratios, and a companion metrics CSV provide strong traceability."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "The report explicitly frames scores as relative rather than default probabilities and details peer, lease, scale, stress, and data limitations."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Shows that the Target/Walmart ordering changes under leverage-heavy weighting.",
+    "Preserves unrounded filing facts and identifies every XBRL source tag."
+  ],
+  "concerns": [
+    "Expand or pre-register the peer set and add debt maturities, covenant/revolver context, and non-uniform operating stress before generalizing."
+  ]
+}

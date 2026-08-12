@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rubricVersion": "baseline-v1",
+  "condition": "reference",
+  "evaluationMode": "artifact-review",
+  "evaluator": "Baseline artifact review",
+  "evaluatedAt": "2026-08-12T01:50:29Z",
+  "summary": "Technically strong within-company trend extraction, but the unbounded margin ranking is dominated by tiny revenue denominators and can overstate economically meaningful improvement.",
+  "overallScore": 90,
+  "artifactRatings": [
+    {
+      "metricId": "correctness",
+      "score": 3,
+      "rationale": "Aligned arithmetic and classifications are coherent, but labeling extreme denominator-driven margin changes as the strongest improvement weakens the substantive answer to which companies appear more profitable."
+    },
+    {
+      "metricId": "completeness",
+      "score": 4,
+      "rationale": "The CSV includes identifiers, aligned facts, changes, measures, tags, and classifications; methodology covers mappings, findings, and limitations."
+    },
+    {
+      "metricId": "process_validity",
+      "score": 3.5,
+      "rationale": "Annual alignment, standard-tag restrictions, duplicate rules, and deterministic classification are strong, but a revenue floor, winsorized rank, or absolute-profit corroboration is missing."
+    },
+    {
+      "metricId": "evidence_traceability",
+      "score": 4,
+      "rationale": "Accessions, tags, versions, raw denominators, periods, and classification reasons provide excellent traceability."
+    },
+    {
+      "metricId": "uncertainty_calibration",
+      "score": 4,
+      "rationale": "The report explicitly warns that labels are mechanical, one-metric cases are weaker, and one-time events or tiny revenue can distort trends."
+    }
+  ],
+  "operationalMetrics": {
+    "taskSuccess": null,
+    "totalTimeSeconds": null,
+    "humanActiveTimeSeconds": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "toolCalls": null,
+    "estimatedCostUsd": null,
+    "predictedSuccessProbability": null,
+    "interventions": null,
+    "verificationActions": null,
+    "verificationCoverage": null,
+    "meaningfulSteeringRate": null,
+    "errorsCaughtByHuman": null,
+    "notes": "Not available from submitted artifacts; do not interpret missing telemetry as zero."
+  },
+  "subjectiveRatings": [],
+  "learning": {
+    "preTaskScore": null,
+    "postTaskScore": null,
+    "notes": "Not applicable to a reference artifact review."
+  },
+  "strengths": [
+    "Aligns each company's periods, tags, taxonomy version, and units before calculating margins.",
+    "Makes tiny denominators visible and does not claim an investment ranking."
+  ],
+  "concerns": [
+    "Primary ranked examples are economically unstable; report robust rankings with a material-revenue threshold or denominator sensitivity."
+  ]
+}
