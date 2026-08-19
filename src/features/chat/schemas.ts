@@ -3,7 +3,11 @@ import { z } from "zod"
 export const providerIdSchema = z.enum(["openai", "codex", "anthropic", "google"])
 export type ProviderId = z.infer<typeof providerIdSchema>
 
+export const agentModeSchema = z.enum(["baseline", "scaffolding"])
+export type AgentMode = z.infer<typeof agentModeSchema>
+
 export const agentModelConfigSchema = z.object({
+  mode: agentModeSchema.default("baseline"),
   provider: providerIdSchema,
   model: z.string().trim().min(1).max(200),
   thinkingEffort: z.string().trim().min(1).max(40).default("default"),

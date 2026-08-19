@@ -24,7 +24,15 @@ function recoverLatestResearchPlan(messages: unknown[]) {
   return null
 }
 
+export function prepareBaselineMessages(messages: unknown[]) {
+  return prepareMessages(messages, false)
+}
+
 export function prepareActionMessages(messages: unknown[]) {
+  return prepareMessages(messages, true)
+}
+
+function prepareMessages(messages: unknown[], includeActions: boolean) {
   if (!messages.length) return messages
   const transformed = structuredClone(messages)
 
@@ -56,7 +64,7 @@ export function prepareActionMessages(messages: unknown[]) {
 
     let text = textPart.text
     const action = parsed.data?.action
-    if (action && index === transformed.length - 1) {
+    if (includeActions && action && index === transformed.length - 1) {
       const plan = recoverLatestResearchPlan(messages)
       if (!plan) {
         throw new Error(

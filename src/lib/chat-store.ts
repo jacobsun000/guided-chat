@@ -1,10 +1,12 @@
 import type { UIMessage } from "ai"
 
 export type ProviderId = "openai" | "codex" | "anthropic" | "google"
+export type AgentMode = "baseline" | "scaffolding"
 
 export type ProviderOptionsJson = Record<ProviderId, string>
 
 export type ChatSettings = {
+  mode: AgentMode
   provider: ProviderId
   model: string
   thinkingEffort: string
@@ -35,6 +37,7 @@ export const DEFAULT_PROVIDER_OPTIONS: ProviderOptionsJson = {
 
 export function createDefaultSettings(): ChatSettings {
   return {
+    mode: "baseline",
     provider: "codex",
     model: "gpt-5.6-sol",
     thinkingEffort: "xhigh",

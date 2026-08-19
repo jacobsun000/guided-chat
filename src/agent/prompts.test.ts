@@ -1,45 +1,18 @@
 import { describe, expect, it } from "vitest"
 
-import { RESEARCH_SYSTEM_PROMPT } from "./prompts"
+import { BASELINE_SYSTEM_PROMPT, SCAFFOLDING_SYSTEM_PROMPT } from "./prompts"
 
-describe("RESEARCH_SYSTEM_PROMPT", () => {
-  it("gates plan publication behind the complete research workflow", () => {
-    const stages = [
-      "Stage 1 — Source reconnaissance",
-      "Stage 2 — High-level internal overview",
-      "Stage 3 — Deep subtopic research",
-      "Stage 4 — Audience and background calibration",
-      "Stage 5 — Curriculum and presentation design",
-      "Stage 6 — Publish the route and stop",
-    ]
-    const positions = stages.map((stage) =>
-      RESEARCH_SYSTEM_PROMPT.indexOf(stage)
-    )
-
-    expect(positions.every((position) => position >= 0)).toBe(true)
-    expect(positions).toEqual(positions.toSorted((left, right) => left - right))
-    expect(RESEARCH_SYSTEM_PROMPT).toContain(
-      "DO NOT provide a direct answer"
-    )
-    expect(RESEARCH_SYSTEM_PROMPT).toContain(
-      "Do not call update_plan until every applicable stage is complete."
-    )
+describe("agent mode prompts", () => {
+  it("keeps the baseline prompt short and focused on data analysis tools", () => {
+    expect(BASELINE_SYSTEM_PROMPT).toContain("data analysis agent")
+    for (const tool of ["web_search", "read_image", "exec", "apply_patch"]) {
+      expect(BASELINE_SYSTEM_PROMPT).toContain(tool)
+    }
+    expect(BASELINE_SYSTEM_PROMPT).toContain("@task and @dataset")
+    expect(BASELINE_SYSTEM_PROMPT.length).toBeLessThan(1_000)
   })
 
-  it("requires the shared canvas component system for HTML slides", () => {
-    expect(RESEARCH_SYSTEM_PROMPT).toContain("`CanvasUI` component kit")
-    expect(RESEARCH_SYSTEM_PROMPT).toContain(
-      "Use static Tailwind classes only for layout"
-    )
-    expect(RESEARCH_SYSTEM_PROMPT).toContain(
-      "do not add a scrollable outer canvas"
-    )
-  })
-
-  it("documents validated @ references and read-only source roots", () => {
-    expect(RESEARCH_SYSTEM_PROMPT).toContain("selected @task and @dataset")
-    expect(RESEARCH_SYSTEM_PROMPT).toContain("<references> block")
-    expect(RESEARCH_SYSTEM_PROMPT).toContain("/tasks")
-    expect(RESEARCH_SYSTEM_PROMPT).toContain("/datasets")
+  it("leaves scaffolding as an explicit placeholder", () => {
+    expect(SCAFFOLDING_SYSTEM_PROMPT).toContain("not implemented")
   })
 })

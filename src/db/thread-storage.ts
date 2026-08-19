@@ -27,6 +27,7 @@ export function normalizeSettings(settings: PersistedSettings): ChatSettings {
   const defaults = createDefaultSettings()
 
   return {
+    mode: settings.mode ?? defaults.mode,
     provider: settings.provider ?? defaults.provider,
     model: settings.model ?? defaults.model,
     thinkingEffort: settings.thinkingEffort ?? defaults.thinkingEffort,

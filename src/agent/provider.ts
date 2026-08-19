@@ -56,7 +56,7 @@ export function createModel(config: AgentModelConfig, env: AgentEnvironment = pr
   return factories[config.provider]()
 }
 
-export function normalizeProviderOptions(config: AgentModelConfig): ProviderMetadata | undefined {
+export function normalizeProviderOptions(config: Omit<AgentModelConfig, "mode"> & { mode?: AgentModelConfig["mode"] }): ProviderMetadata | undefined {
   const raw = { ...config.providerOptions }
   if (config.provider === "codex") {
     // Codex OAuth responses are stateless. The OpenAI adapter needs this before

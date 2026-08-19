@@ -1,13 +1,13 @@
 import "server-only"
 
-import { ToolLoopAgent, createAgentUIStreamResponse, hasToolCall, stepCountIs, type LanguageModel, type ToolSet } from "ai"
+import { ToolLoopAgent, createAgentUIStreamResponse, stepCountIs, type LanguageModel, type ToolSet } from "ai"
 
 import type { AgentModelConfig } from "@/features/chat/schemas"
 import { createModel, normalizeProviderOptions, type AgentEnvironment } from "./provider"
-import { RESEARCH_SYSTEM_PROMPT } from "./prompts"
-import { createAgentTools } from "./tools"
+import { BASELINE_SYSTEM_PROMPT } from "./prompts"
+import { createBaselineTools } from "./tools"
 import type { NetworkDependencies } from "./tools/read-image"
-import { prepareActionMessages } from "./prepare-messages"
+import { prepareBaselineMessages } from "./prepare-messages"
 import { getSandboxManager } from "./sandbox/docker"
 import type { SandboxManager } from "./sandbox/types"
 
@@ -68,9 +68,12 @@ export class ResearchAgentService {
     })
 
     try {
+      if (request.agentConfig.mode === "scaffolding") {
+        throw new Error("Scaffolding mode is not implemented yet.")
+      }
       const env = this.dependencies.env ?? process.env
       const manager = this.dependencies.sandboxManager ?? getSandboxManager()
-      const tools = (this.dependencies.createTools ?? createAgentTools)(
+      const tools = (this.dependencies.createTools ?? createBaselineTools)(
         env,
         this.dependencies.network,
         {
@@ -86,10 +89,10 @@ export class ResearchAgentService {
       const agent = new ToolLoopAgent({
         id: "research-agent",
         model,
-        instructions: RESEARCH_SYSTEM_PROMPT,
+        instructions: BASELINE_SYSTEM_PROMPT,
         providerOptions: normalizeProviderOptions(request.agentConfig),
         tools,
-        stopWhen: [hasToolCall("update_plan"), stepCountIs(200)],
+        stopWhen: stepCountIs(40),
         onStepFinish: (step) => {
           completedSteps += 1
           const toolNames = step.toolCalls.map((call) => call.toolName)
@@ -120,7 +123,7 @@ export class ResearchAgentService {
       })
       const response = await createAgentUIStreamResponse({
         agent,
-        uiMessages: prepareActionMessages(request.messages),
+        uiMessages: prepareBaselineMessages(request.messages),
         abortSignal: request.abortSignal,
         messageMetadata: ({ part }) => {
           if (part.type !== "finish") return undefined

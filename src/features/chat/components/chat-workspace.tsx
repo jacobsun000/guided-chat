@@ -96,6 +96,7 @@ import {
   createDefaultSettings,
   createDefaultStore,
   createThread,
+  type AgentMode,
   type ChatSettings,
   type ChatThread,
   type ProviderId,
@@ -495,6 +496,7 @@ function normalizeStoredThread(thread: ChatThread): ChatThread {
   const storedSettings = (thread.settings ?? {}) as Partial<ChatSettings>
   const defaultSettings = createDefaultSettings()
   const settings = {
+    mode: storedSettings.mode ?? defaultSettings.mode,
     provider: storedSettings.provider ?? defaultSettings.provider,
     model: storedSettings.model ?? defaultSettings.model,
     thinkingEffort:
@@ -842,6 +844,7 @@ export default function Home() {
       accessToken: accessToken.trim(),
       threadId: activeThread.id,
       agentConfig: {
+        mode: settings.mode,
         provider: settings.provider,
         model: settings.model,
         thinkingEffort: settings.thinkingEffort,
@@ -1214,6 +1217,18 @@ export default function Home() {
           </div>
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
             <Select
+              value={activeThread.settings.mode}
+              onValueChange={(mode) => updateActiveSettings({ mode: mode as AgentMode })}
+            >
+              <SelectTrigger className="h-8 w-[132px]" aria-label="Agent mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="baseline">Baseline</SelectItem>
+                <SelectItem value="scaffolding" disabled>Scaffolding (soon)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
               value={selectedProvider}
               onValueChange={(value) => updateActiveProvider(value as ProviderId)}
             >
@@ -1440,7 +1455,7 @@ export default function Home() {
             )}
           </div>
 
-          <aside className="order-first h-[min(34svh,300px)] shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[380px] lg:border-b-0 lg:border-l xl:w-[420px]">
+          {activeThread.settings.mode === "scaffolding" && <aside className="order-first h-[min(34svh,300px)] shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[380px] lg:border-b-0 lg:border-l xl:w-[420px]">
             <ResearchMetroMap
               plan={researchPlan}
               currentStepName={researchStepProgress.currentStepName}
@@ -1449,7 +1464,7 @@ export default function Home() {
               isUpdating={researchPlanUpdating}
               onSelectStep={exploreResearchStep}
             />
-          </aside>
+          </aside>}
         </div>
       </SidebarInset>
 
@@ -2241,6 +2256,24 @@ function SettingsDialog({
           <ScrollArea className="max-h-[60svh] pr-3">
             <TabsContent value="model">
               <FieldGroup>
+                <Field>
+                  <FieldLabel>Agent Mode</FieldLabel>
+                  <Select
+                    value={settings.mode}
+                    onValueChange={(mode) => onSettingsChange({ mode: mode as AgentMode })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="baseline">Baseline</SelectItem>
+                      <SelectItem value="scaffolding" disabled>Scaffolding (coming soon)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    Baseline provides a general data-analysis agent. Guided scaffolding will be added later.
+                  </FieldDescription>
+                </Field>
                 <Field>
                   <FieldLabel>Provider</FieldLabel>
                   <Select
