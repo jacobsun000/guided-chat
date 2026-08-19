@@ -138,7 +138,7 @@ const PROVIDERS: Record<
   codex: {
     label: "Codex OAuth",
     defaultModel: "gpt-5.6-sol",
-    defaultThinkingEffort: "xhigh",
+    defaultThinkingEffort: "medium",
     models: [
       { label: "GPT-5.6 Sol", value: "gpt-5.6-sol", description: "Deep research" },
       { label: "GPT-5.6 Terra", value: "gpt-5.6-terra", description: "Coding model" },
@@ -157,7 +157,7 @@ const PROVIDERS: Record<
   openai: {
     label: "OpenAI",
     defaultModel: "gpt-5.6-sol",
-    defaultThinkingEffort: "xhigh",
+    defaultThinkingEffort: "medium",
     models: [
       {
         label: "GPT-5.6 Sol",
@@ -549,6 +549,7 @@ export default function Home() {
     string | null
   >(null)
   const [reviewingNode, setReviewingNode] = React.useState<string | null>(null)
+  const [reviewPanelWidth, setReviewPanelWidth] = React.useState(460)
 
   const activeThread = React.useMemo(
     () =>
@@ -593,7 +594,7 @@ export default function Home() {
           messages: finishedMessages,
         }),
       })
-      if (!response.ok) throw new Error("Unable to generate the trajectory review.")
+      if (!response.ok) throw new Error("Unable to generate the completion review.")
       const result = await response.json() as ScaffoldMapResult & { trajectory: TrajectoryStep[] }
       setStore((current) => ({
         ...current,
@@ -867,6 +868,36 @@ export default function Home() {
     }))
     void generateScaffoldingMap(activeThread.id, settings, messages)
   }, [activeThread, generateScaffoldingMap, hasAccessToken, isStreaming, messages])
+
+  const regenerateScaffoldingReview = React.useCallback(() => {
+    if (isStreaming) return
+    if (!hasAccessToken) {
+      setComposerError("Enter the workspace access token before regenerating the review.")
+      setSettingsOpen(true)
+      return
+    }
+    void generateScaffoldingMap(
+      activeThread.id,
+      { ...activeThread.settings, mode: "scaffolding" },
+      messages
+    )
+  }, [activeThread, generateScaffoldingMap, hasAccessToken, isStreaming, messages])
+
+  const startReviewPanelResize = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startWidth = reviewPanelWidth
+    const resize = (moveEvent: PointerEvent) => {
+      const maximum = Math.max(420, window.innerWidth * 0.7)
+      setReviewPanelWidth(Math.min(maximum, Math.max(340, startWidth + startX - moveEvent.clientX)))
+    }
+    const stopResize = () => {
+      window.removeEventListener("pointermove", resize)
+      window.removeEventListener("pointerup", stopResize)
+    }
+    window.addEventListener("pointermove", resize)
+    window.addEventListener("pointerup", stopResize)
+  }, [reviewPanelWidth])
 
   const reviewScaffoldingNode = React.useCallback(async (node: ScaffoldNode) => {
     const scaffold = activeThread.scaffolding
@@ -1242,7 +1273,7 @@ export default function Home() {
                 disabled={isStreaming || !messages.some((message) => message.role === "assistant")}
               >
                 <RouteIcon data-icon="inline-start" />
-                Scaffold review
+                Completion Review
               </Button>
             )}
             <Select
@@ -1484,12 +1515,23 @@ export default function Home() {
             )}
           </div>
 
-          {activeThread.settings.mode === "scaffolding" && <aside className="order-first h-[min(42svh,380px)] shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[380px] lg:border-b-0 lg:border-l xl:w-[420px]">
+          {activeThread.settings.mode === "scaffolding" && <aside
+            className="relative order-first h-[min(48svh,460px)] w-full shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[var(--review-panel-width)] lg:border-b-0 lg:border-l"
+            style={{ "--review-panel-width": `${reviewPanelWidth}px` } as React.CSSProperties}
+          >
+            <div
+              role="separator"
+              aria-label="Resize completion review panel"
+              aria-orientation="vertical"
+              onPointerDown={startReviewPanelResize}
+              className="absolute inset-y-0 left-0 z-20 hidden w-2 -translate-x-1/2 cursor-col-resize transition hover:bg-primary/20 lg:block"
+            />
             <ScaffoldingReview
               state={activeThread.scaffolding}
               reviewingNode={reviewingNode}
               onReviewNode={reviewScaffoldingNode}
               onRate={rateScaffoldingAnswer}
+              onRegenerate={regenerateScaffoldingReview}
             />
           </aside>}
         </div>

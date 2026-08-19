@@ -10,7 +10,7 @@ export type TrajectoryStep = z.infer<typeof trajectoryStepSchema>
 
 export const scaffoldNodeSchema = z.object({
   name: z.string().min(1).max(60),
-  description: z.string().min(1).max(400),
+  description: z.string().min(1).max(160).describe("One very short, non-technical sentence of at most 12 words."),
   importance: z.number().int().min(1).max(100),
   uncertainty: z.number().int().min(1).max(100),
   review_suggestion: z.string().min(1).max(600),
@@ -83,6 +83,8 @@ export function validateScaffoldMap(result: ScaffoldMapResult, trajectory: Traje
   const expected = new Set(trajectory.map((step) => step.step_id))
   const covered = new Map<number, string[]>()
   for (const node of result.map.nodes) {
+    const descriptionWords = node.description.trim().split(/\s+/).filter(Boolean).length
+    if (descriptionWords > 12) errors.push(`Node ${node.name} description must contain at most 12 words.`)
     try {
       for (const id of parseStepIds(node.step_ids)) {
         if (!expected.has(id)) errors.push(`Node ${node.name} references unknown step ${id}.`)

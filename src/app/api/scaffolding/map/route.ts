@@ -26,6 +26,6 @@ export async function POST(request: Request) {
     return Response.json(await scaffoldingService.createMap({ ...parsed.data, abortSignal: request.signal }))
   } catch (error) {
     console.error("Scaffolding map generation failed", error)
-    return jsonError("INTERNAL_ERROR", "Unable to generate the trajectory review.", 500)
+    return jsonError("INTERNAL_ERROR", "Unable to generate the completion review.", 500)
   }
 }

@@ -42,7 +42,7 @@ export function createDefaultSettings(): ChatSettings {
     mode: "baseline",
     provider: "codex",
     model: "gpt-5.6-sol",
-    thinkingEffort: "xhigh",
+    thinkingEffort: "medium",
     providerOptions: { ...DEFAULT_PROVIDER_OPTIONS },
   }
 }

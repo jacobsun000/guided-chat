@@ -21,15 +21,15 @@ import { createBaselineTools } from "./tools"
 import type { NetworkDependencies } from "./tools/read-image"
 import { buildBaselineTrajectory, selectTrajectorySteps } from "./trajectory"
 
-const MAP_SYSTEM_PROMPT = `You review a data-analysis agent trajectory. Produce a compact review map with 4-8 major nodes.
+const MAP_SYSTEM_PROMPT = `You review how a data-analysis agent completed a task. Produce a compact completion map with 4-8 major nodes. Model the meaningful path from the user's goal through key decisions and evidence to the final result. Focus on consequential task steps, not implementation mechanics. Do not create nodes for shell commands, tool selection, file listing, package installation, formatting, or other low-level technical details; fold those primitive events into the higher-level purpose they served.
 
-Each node must have a unique short name (several words), a one- or two-sentence description, importance and uncertainty integer scores from 1 to 100, a review suggestion, and step_ids. Importance measures how critical the node is to the final task: 100 means failure here will definitely make the entire task fail; 50 means it materially affects quality; 1 means it is incidental. Uncertainty measures likelihood that the reasoning or execution could be wrong: 100 means failure is extremely likely or unsupported; 50 means meaningful doubt remains; 1 means it is directly verified and highly reliable. review_suggestion must say what a human should inspect and why.
+Each node must have a unique short name of 2-5 words. Its description must be one very short sentence of at most 12 words, written for a non-technical reviewer. Include importance and uncertainty integer scores from 1 to 100, a review suggestion, and step_ids. Importance measures how critical the node is to the final task: 100 means failure here will definitely make the entire task fail; 50 means it materially affects quality; 1 means it is incidental. Uncertainty measures likelihood that the reasoning or execution could be wrong: 100 means failure is extremely likely or unsupported; 50 means meaningful doubt remains; 1 means it is directly verified and highly reliable. review_suggestion must say what a human should inspect and why.
 
 step_ids use compact forms such as "5-16" or "5,6,7,11". Every provided trajectory step must belong to exactly one node. Edges use exact node names and represent workflow direction. trajectory_summary is concise context for another review agent: goal, key steps, and outcomes. result_summary is a concise, plain-language human summary emphasizing key outcomes.
 
 You may use the available analysis tools when useful. Return only the requested structured output.`
 
-const REVIEW_SYSTEM_PROMPT = `You are a review assistant explaining one major node from a data-analysis trajectory. Use the global trajectory summary and exact selected steps. Produce one self-contained HTML slide and at most three multiple-choice review questions about consequential decisions in these steps.
+const REVIEW_SYSTEM_PROMPT = `You are a review assistant explaining one major stage in how a data-analysis task was completed. Use the global trajectory summary and exact selected steps. Focus on the stage's goal, consequential choices, evidence, assumptions, and effect on the result—not low-level tool mechanics such as which shell command or utility was used. Produce one self-contained HTML slide and at most three multiple-choice review questions about consequential decisions in these steps.
 
 The HTML must be a complete, readable document with inline CSS, no scripts, no external assets, and no network dependencies. Explain what happened, evidence used, assumptions, risks, and what deserves verification. Do not invent missing work.
 
@@ -68,7 +68,7 @@ export class ScaffoldingService {
           ? `${prompt}\n\nYour previous output was:\n${JSON.stringify(prior)}\n\nValidation failed. Correct all of these issues:\n${correction}`
           : prompt,
         scaffoldMapResultSchema,
-        "trajectory_review_map"
+        "completion_review_map"
       )
       prior = result.output
       const errors = validateScaffoldMap(prior, trajectory)
