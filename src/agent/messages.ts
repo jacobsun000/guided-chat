@@ -15,9 +15,20 @@ export const sourceReferenceMentionSchema = z.object({
   end: z.number().int().positive(),
 })
 
+export const scaffoldSteeringSchema = z.object({
+  id: z.string().min(1),
+  node_name: z.string().min(1).max(60),
+  question: z.string().min(1).max(600),
+  user_choice: z.string().min(1).max(300),
+  rating: z.enum(["disagree", "doubt"]),
+  trajectory_answer: z.string().min(1).max(1200),
+  step_ids: z.string().min(1).max(300),
+})
+
 export const researchMessageMetadataSchema = z
   .object({
     action: exploreResearchStepActionSchema.optional(),
+    steering: z.array(scaffoldSteeringSchema).max(20).optional(),
     references: z.array(sourceReferenceMentionSchema).optional(),
     usage: z.object({
       inputTokens: z.number().nonnegative(),

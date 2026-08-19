@@ -29,9 +29,11 @@ step_ids use compact forms such as "5-16" or "5,6,7,11". Every provided trajecto
 
 You may use the available analysis tools when useful. Return only the requested structured output.`
 
+const FOLLOWUP_SYSTEM_PROMPT = `You are the node-specific completion review assistant. Answer the user's question about quoted material using the selected trajectory steps and global summary. Stay scoped to this node, distinguish what the trajectory actually established from your interpretation, and be concise but helpful. Do not discuss low-level tool mechanics unless the question specifically asks about them.`
+
 const REVIEW_SYSTEM_PROMPT = `You are a review assistant explaining one major stage in how a data-analysis task was completed. Use the global trajectory summary and exact selected steps. Focus on the stage's goal, consequential choices, evidence, assumptions, and effect on the result—not low-level tool mechanics such as which shell command or utility was used. Produce one self-contained HTML slide and at most three multiple-choice review questions about consequential decisions in these steps.
 
-The HTML must be a complete, readable document with inline CSS, no scripts, no external assets, and no network dependencies. Explain what happened, evidence used, assumptions, risks, and what deserves verification. Do not invent missing work.
+The HTML must be a complete, readable document with inline CSS, no scripts, no external assets, and no network dependencies. It must fill 100% of its container width and fit within a single fixed-height canvas without internal scrolling; use compact responsive layout and overflow: hidden on html and body. Explain what happened, evidence used, assumptions, risks, and what deserves verification. Do not invent missing work.
 
 Each question asks what the user would do or conclude at a key step. choices contains plausible options. trajectory_answer explains what the trajectory actually did and its limitations; it is not presented as ground truth. step_ids must refer only to supplied selected steps. You may use the available analysis tools when useful. Return only the requested structured output.`
 
@@ -116,6 +118,34 @@ export class ScaffoldingService {
       correction = errors.map((error) => `- ${error}`).join("\n")
     }
     throw new Error(`Unable to produce a valid node review: ${correction}`)
+  }
+
+  async createFollowup(request: BaseRequest & {
+    trajectory: TrajectoryStep[]
+    trajectorySummary: string
+    nodeName: string
+    stepIds: string
+    quote: string
+    question: string
+    history?: { role: "user" | "assistant"; text: string }[]
+  }) {
+    const ids = parseStepIds(request.stepIds)
+    const selectedSteps = selectTrajectorySteps(request.trajectory, ids)
+    if (selectedSteps.length !== ids.length) throw new Error("The node references unavailable trajectory steps.")
+    const env = this.dependencies.env ?? process.env
+    const manager = this.dependencies.sandboxManager ?? getSandboxManager()
+    const tools: ToolSet = (this.dependencies.createTools ?? createBaselineTools)(env, this.dependencies.network, { manager, threadId: request.threadId, abortSignal: request.abortSignal })
+    const result = streamText({
+      model: createModel(request.agentConfig, env),
+      system: FOLLOWUP_SYSTEM_PROMPT,
+      prompt: `Trajectory summary:\n${request.trajectorySummary}\n\nNode: ${request.nodeName}\nSelected steps:\n${JSON.stringify(selectedSteps)}\n\nPrior node follow-ups:\n${JSON.stringify(request.history ?? [])}\n\nQuoted text:\n${request.quote || "(No new selection; this is a continuation of the node follow-up.)"}\n\nUser question:\n${request.question}`,
+      tools,
+      stopWhen: stepCountIs(40),
+      providerOptions: normalizeProviderOptions(request.agentConfig),
+      abortSignal: request.abortSignal,
+    })
+    await result.consumeStream()
+    return { text: await result.text }
   }
 
   private async generate<OUTPUT>(

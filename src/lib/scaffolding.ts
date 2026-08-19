@@ -43,6 +43,23 @@ export const scaffoldReviewResultSchema = z.object({
 })
 export type ScaffoldReviewResult = z.infer<typeof scaffoldReviewResultSchema>
 export type ScaffoldRating = "agree" | "disagree" | "doubt"
+export type ScaffoldSteering = {
+  id: string
+  node_name: string
+  question: string
+  user_choice: string
+  rating: Extract<ScaffoldRating, "disagree" | "doubt">
+  trajectory_answer: string
+  step_ids: string
+}
+
+export type ScaffoldFollowupMessage = {
+  id: string
+  role: "user" | "assistant"
+  text: string
+  quote?: string
+  node_name: string
+}
 
 export type ScaffoldState = {
   status: "idle" | "generating" | "ready" | "error"
@@ -51,6 +68,8 @@ export type ScaffoldState = {
   trajectory?: TrajectoryStep[]
   reviews?: Record<string, ScaffoldReviewResult>
   ratings?: Record<string, Record<number, ScaffoldRating>>
+  pendingSteering?: ScaffoldSteering[]
+  followups?: Record<string, ScaffoldFollowupMessage[]>
   error?: string
 }
 

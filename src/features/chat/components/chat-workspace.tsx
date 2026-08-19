@@ -11,6 +11,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
   AlertCircleIcon,
+  ArrowLeftIcon,
   BotIcon,
   CheckIcon,
   ChevronDownIcon,
@@ -109,7 +110,7 @@ import type {
 } from "@/lib/question-tool"
 import type { UpdateResearchPlanResult } from "@/lib/research-plan"
 import { cn } from "@/lib/utils"
-import type { ScaffoldMapResult, ScaffoldNode, ScaffoldRating, ScaffoldReviewResult, TrajectoryStep } from "@/lib/scaffolding"
+import type { ScaffoldFollowupMessage, ScaffoldMapResult, ScaffoldNode, ScaffoldRating, ScaffoldReviewResult, ScaffoldSteering, TrajectoryStep } from "@/lib/scaffolding"
 import {
   researchMessageMetadataSchema,
   type ResearchMessageMetadata,
@@ -549,7 +550,10 @@ export default function Home() {
     string | null
   >(null)
   const [reviewingNode, setReviewingNode] = React.useState<string | null>(null)
-  const [reviewPanelWidth, setReviewPanelWidth] = React.useState(460)
+  const [reviewPanelWidth, setReviewPanelWidth] = React.useState<string | number>("50%")
+  const [activeFollowupNode, setActiveFollowupNode] = React.useState<string | null>(null)
+  const [followupLoading, setFollowupLoading] = React.useState(false)
+  const [followupInput, setFollowupInput] = React.useState("")
 
   const activeThread = React.useMemo(
     () =>
@@ -886,7 +890,7 @@ export default function Home() {
   const startReviewPanelResize = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault()
     const startX = event.clientX
-    const startWidth = reviewPanelWidth
+    const startWidth = event.currentTarget.parentElement?.getBoundingClientRect().width ?? 460
     const resize = (moveEvent: PointerEvent) => {
       const maximum = Math.max(420, window.innerWidth * 0.7)
       setReviewPanelWidth(Math.min(maximum, Math.max(340, startWidth + startX - moveEvent.clientX)))
@@ -897,7 +901,7 @@ export default function Home() {
     }
     window.addEventListener("pointermove", resize)
     window.addEventListener("pointerup", stopResize)
-  }, [reviewPanelWidth])
+  }, [])
 
   const reviewScaffoldingNode = React.useCallback(async (node: ScaffoldNode) => {
     const scaffold = activeThread.scaffolding
@@ -952,6 +956,66 @@ export default function Home() {
       } : thread),
     }))
   }, [])
+
+  const queueScaffoldingSteering = React.useCallback((steering: ScaffoldSteering) => {
+    setInput((current) => current.trim() ? current : "Please address my Completion Review feedback.")
+    setStore((current) => ({
+      ...current,
+      threads: current.threads.map((thread) => thread.id === current.activeThreadId && thread.scaffolding ? {
+        ...thread,
+        scaffolding: {
+          ...thread.scaffolding,
+          pendingSteering: [
+            ...(thread.scaffolding.pendingSteering ?? []).filter((item) => !(item.node_name === steering.node_name && item.question === steering.question)),
+            steering,
+          ],
+        },
+      } : thread),
+    }))
+  }, [])
+
+  const askScaffoldingFollowup = React.useCallback(async (node: ScaffoldNode, quote: string, question: string) => {
+    const scaffold = activeThread.scaffolding
+    if (!scaffold?.trajectory || !scaffold.mapResult) return
+    const userMessage: ScaffoldFollowupMessage = { id: crypto.randomUUID(), role: "user", text: question, quote, node_name: node.name }
+    setActiveFollowupNode(node.name)
+    setFollowupLoading(true)
+    setStore((current) => ({ ...current, threads: current.threads.map((thread) => thread.id === activeThread.id && thread.scaffolding ? { ...thread, scaffolding: { ...thread.scaffolding, followups: { ...thread.scaffolding.followups, [node.name]: [...(thread.scaffolding.followups?.[node.name] ?? []), userMessage] } } } : thread) }))
+    try {
+      const response = await fetch("/api/scaffolding/followup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...createChatRequest(),
+          trajectory: scaffold.trajectory,
+          trajectorySummary: scaffold.mapResult.trajectory_summary,
+          nodeName: node.name,
+          stepIds: node.step_ids,
+          quote,
+          question,
+          history: (scaffold.followups?.[node.name] ?? []).map(({ role, text }) => ({ role, text })),
+        }),
+      })
+      if (!response.ok) throw new Error("Unable to answer the follow-up.")
+      const result = await response.json() as { text: string }
+      const assistantMessage: ScaffoldFollowupMessage = { id: crypto.randomUUID(), role: "assistant", text: result.text, node_name: node.name }
+      setStore((current) => ({ ...current, threads: current.threads.map((thread) => thread.id === activeThread.id && thread.scaffolding ? { ...thread, scaffolding: { ...thread.scaffolding, followups: { ...thread.scaffolding.followups, [node.name]: [...(thread.scaffolding.followups?.[node.name] ?? []), assistantMessage] } } } : thread) }))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to answer the follow-up.")
+    } finally {
+      setFollowupLoading(false)
+    }
+  }, [activeThread, createChatRequest])
+
+  const continueScaffoldingFollowup = React.useCallback((event?: React.FormEvent) => {
+    event?.preventDefault()
+    const question = followupInput.trim()
+    if (!question || !activeFollowupNode || followupLoading) return
+    const node = activeThread.scaffolding?.mapResult?.map.nodes.find((candidate) => candidate.name === activeFollowupNode)
+    if (!node) return
+    setFollowupInput("")
+    void askScaffoldingFollowup(node, "", question)
+  }, [activeFollowupNode, activeThread.scaffolding?.mapResult?.map.nodes, askScaffoldingFollowup, followupInput, followupLoading])
 
   const updateActiveThread = React.useCallback(
     (updater: (thread: ChatThread) => ChatThread) => {
@@ -1022,6 +1086,7 @@ export default function Home() {
     }))
     setInput("")
     setInputReferences([])
+    setActiveFollowupNode(null)
   }, [])
 
   const switchThread = React.useCallback(
@@ -1036,6 +1101,7 @@ export default function Home() {
       }))
       setInput("")
       setInputReferences([])
+      setActiveFollowupNode(null)
     },
     [isStreaming, stop]
   )
@@ -1097,6 +1163,7 @@ export default function Home() {
 
       const leadingWhitespace = input.match(/^\s*/)?.[0].length ?? 0
       const text = input.trim()
+      const pendingSteering = activeThread.scaffolding?.pendingSteering ?? []
       const sentReferences = inputReferences.flatMap((reference) => {
         const start = reference.start - leadingWhitespace
         const end = reference.end - leadingWhitespace
@@ -1121,9 +1188,10 @@ export default function Home() {
         await sendMessage(
           {
             text,
-            metadata: sentReferences.length
+            metadata: sentReferences.length || pendingSteering.length
               ? ({
-                  references: sentReferences,
+                  references: sentReferences.length ? sentReferences : undefined,
+                  steering: pendingSteering.length ? pendingSteering : undefined,
                 } satisfies ResearchMessageMetadata)
               : undefined,
           },
@@ -1131,6 +1199,9 @@ export default function Home() {
             body: requestBody,
           }
         )
+        if (pendingSteering.length) {
+          setStore((current) => ({ ...current, threads: current.threads.map((thread) => thread.id === activeThread.id && thread.scaffolding ? { ...thread, scaffolding: { ...thread.scaffolding, pendingSteering: [] } } : thread) }))
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Unable to send the message."
@@ -1143,6 +1214,7 @@ export default function Home() {
       }
     },
     [
+      activeThread,
       clearError,
       createChatRequest,
       hasAccessToken,
@@ -1385,7 +1457,38 @@ export default function Home() {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <ScrollArea className="min-h-0 flex-1 overflow-hidden">
               <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6">
-                {!messages.length && (
+                {activeFollowupNode && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 border bg-card p-3">
+                      <Button variant="ghost" size="sm" onClick={() => setActiveFollowupNode(null)}><ArrowLeftIcon data-icon="inline-start" />Main chat</Button>
+                      <div className="min-w-0"><p className="text-sm font-semibold">Review follow-up</p><p className="truncate text-xs text-muted-foreground">{activeFollowupNode}</p></div>
+                    </div>
+                    {(activeThread.scaffolding?.followups?.[activeFollowupNode] ?? []).map((message) => (
+                      <div key={message.id} className={cn("border p-4", message.role === "user" ? "ml-10 bg-primary/5" : "mr-10 bg-card")}>
+                        <div className="mb-2 text-xs font-semibold text-muted-foreground">{message.role === "user" ? "You · review follow-up" : "Review assistant"}</div>
+                        {message.quote && <blockquote className="mb-3 border-l-2 border-primary pl-3 text-xs text-muted-foreground">“{message.quote}”</blockquote>}
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+                      </div>
+                    ))}
+                    {followupLoading && <div className="flex items-center gap-2 border bg-card px-3 py-2 text-sm text-muted-foreground"><Loader2Icon className="animate-spin" />Answering follow-up…</div>}
+                    <form onSubmit={continueScaffoldingFollowup} className="sticky bottom-0 border bg-background/95 p-2 shadow-sm backdrop-blur">
+                      <InputGroup className="h-auto min-h-11 items-center bg-card px-2 py-1.5">
+                        <Input
+                          value={followupInput}
+                          onChange={(event) => setFollowupInput(event.target.value)}
+                          placeholder="Continue this follow-up…"
+                          disabled={followupLoading}
+                          className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+                        />
+                        <InputGroupButton type="submit" size="icon-sm" variant="default" disabled={!followupInput.trim() || followupLoading}>
+                          <SendIcon />
+                          <span className="sr-only">Send follow-up</span>
+                        </InputGroupButton>
+                      </InputGroup>
+                    </form>
+                  </div>
+                )}
+                {!activeFollowupNode && !messages.length && (
                   <Empty className="min-h-[55svh] border">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
@@ -1406,7 +1509,7 @@ export default function Home() {
                   </Empty>
                 )}
 
-                {messages.map((message) => (
+                {!activeFollowupNode && messages.map((message) => (
                   <MessageBubble
                     key={message.id}
                     message={message}
@@ -1420,7 +1523,7 @@ export default function Home() {
                   />
                 ))}
 
-                {status === "submitted" && (
+                {!activeFollowupNode && status === "submitted" && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Loader2Icon className="animate-spin" />
                     Waiting for the model
@@ -1429,7 +1532,7 @@ export default function Home() {
               </div>
             </ScrollArea>
 
-            {!isStreaming && (
+            {!isStreaming && !activeFollowupNode && (
               <div className="border-t bg-background px-3 py-3">
                 <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
                   {(composerError || error || !hasAccessToken) && (
@@ -1450,6 +1553,16 @@ export default function Home() {
 
                   {!pendingQuestionPart && (
                     <form onSubmit={submit}>
+                      {(activeThread.scaffolding?.pendingSteering?.length ?? 0) > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          {activeThread.scaffolding?.pendingSteering?.map((steering) => (
+                            <Badge key={steering.id} variant="secondary" className="gap-1 border border-primary/20 bg-primary/5 text-primary">
+                              @{steering.rating} · {steering.node_name}
+                              <button type="button" aria-label={`Remove ${steering.node_name} steering`} onClick={() => setStore((current) => ({ ...current, threads: current.threads.map((thread) => thread.id === activeThread.id && thread.scaffolding ? { ...thread, scaffolding: { ...thread.scaffolding, pendingSteering: (thread.scaffolding.pendingSteering ?? []).filter((item) => item.id !== steering.id) } } : thread) }))} className="ml-1 hover:bg-primary/10"><XIcon className="size-3" /></button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       <InputGroup className="h-auto min-h-11 items-end gap-1 bg-card px-2 py-1.5 shadow-sm">
                         <SourceReferenceComposer
                           ref={composerTextareaRef}
@@ -1517,7 +1630,7 @@ export default function Home() {
 
           {activeThread.settings.mode === "scaffolding" && <aside
             className="relative order-first h-[min(48svh,460px)] w-full shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[var(--review-panel-width)] lg:border-b-0 lg:border-l"
-            style={{ "--review-panel-width": `${reviewPanelWidth}px` } as React.CSSProperties}
+            style={{ "--review-panel-width": typeof reviewPanelWidth === "number" ? `${reviewPanelWidth}px` : reviewPanelWidth } as React.CSSProperties}
           >
             <div
               role="separator"
@@ -1531,6 +1644,8 @@ export default function Home() {
               reviewingNode={reviewingNode}
               onReviewNode={reviewScaffoldingNode}
               onRate={rateScaffoldingAnswer}
+              onSteer={queueScaffoldingSteering}
+              onFollowup={askScaffoldingFollowup}
               onRegenerate={regenerateScaffoldingReview}
             />
           </aside>}
@@ -1617,6 +1732,9 @@ function MessageBubble({
   const references = parsedMetadata.success
     ? parsedMetadata.data?.references ?? []
     : []
+  const steering = parsedMetadata.success
+    ? parsedMetadata.data?.steering ?? []
+    : []
   const visibleAssistantParts = isUser
     ? []
     : message.parts.filter(isVisibleAssistantPart)
@@ -1646,11 +1764,14 @@ function MessageBubble({
           )}
         >
           {isUser && text ? (
-            <MarkdownContent
-              text={text}
-              isUser={isUser}
-              references={references}
-            />
+            <div className="space-y-2">
+              {steering.length > 0 && <div className="flex flex-wrap gap-1.5">{steering.map((item) => <span key={item.id} className="bg-primary-foreground/15 px-2 py-0.5 text-xs font-medium">@{item.rating} · {item.node_name}</span>)}</div>}
+              <MarkdownContent
+                text={text}
+                isUser={isUser}
+                references={references}
+              />
+            </div>
           ) : !isUser && visibleAssistantParts.length ? (
             <div className="flex flex-col gap-3">
               {activityParts.length > 0 && (

@@ -84,13 +84,12 @@ function prepareMessages(messages: unknown[], includeActions: boolean) {
     }
 
     const references = parsed.data?.references ?? []
-    const referenceContext = buildSourceReferencesContext(
-      textPart.text,
-      references
-    )
-    textPart.text = referenceContext
-      ? `${text}\n\n${referenceContext}`
-      : text
+    const referenceContext = buildSourceReferencesContext(textPart.text, references)
+    const steering = parsed.data?.steering ?? []
+    const steeringContext = steering.length
+      ? `<completion_review_steering>\nThe user reviewed these parts of the prior trajectory. Address all items in one response. For doubt, explain the reasoning and evidence more clearly. For disagree, propose a correction and rework the affected result when feasible.\n${JSON.stringify(steering)}\n</completion_review_steering>`
+      : ""
+    textPart.text = [text, referenceContext, steeringContext].filter(Boolean).join("\n\n")
   }
 
   return transformed
