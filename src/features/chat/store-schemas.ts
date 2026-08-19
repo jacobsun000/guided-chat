@@ -12,6 +12,7 @@ export const chatThreadSchema = z.object({
   updatedAt: z.string(),
   messages: z.array(z.unknown()),
   settings: chatSettingsSchema,
+  scaffolding: z.unknown().optional(),
 })
 export const threadsStoreSchema = z.object({
   version: z.literal(1),

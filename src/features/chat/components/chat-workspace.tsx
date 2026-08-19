@@ -90,7 +90,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { useTheme, type Theme } from "@/components/theme-provider"
-import { ResearchMetroMap } from "@/components/research-metro-map"
+import { ScaffoldingReview } from "@/components/scaffolding-review"
 import {
   DEFAULT_PROVIDER_OPTIONS,
   createDefaultSettings,
@@ -107,12 +107,9 @@ import type {
   AskUserQuestionsOutput,
   ResearchAssistantMessage,
 } from "@/lib/question-tool"
-import {
-  researchPlanSchema,
-  type ResearchPlanStep,
-  type UpdateResearchPlanResult,
-} from "@/lib/research-plan"
+import type { UpdateResearchPlanResult } from "@/lib/research-plan"
 import { cn } from "@/lib/utils"
+import type { ScaffoldMapResult, ScaffoldNode, ScaffoldRating, ScaffoldReviewResult, TrajectoryStep } from "@/lib/scaffolding"
 import {
   researchMessageMetadataSchema,
   type ResearchMessageMetadata,
@@ -321,42 +318,6 @@ function getPendingQuestionPart(messages: ResearchAssistantMessage[]) {
   return null
 }
 
-function getLatestResearchPlan(messages: ResearchAssistantMessage[]) {
-  for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
-    const message = messages[messageIndex]
-
-    if (message.role !== "assistant") continue
-
-    for (let partIndex = message.parts.length - 1; partIndex >= 0; partIndex -= 1) {
-      const part = message.parts[partIndex]
-      if (part.type !== "tool-update_plan" || !("input" in part)) continue
-
-      const parsed = researchPlanSchema.safeParse(part.input)
-      if (parsed.success) return parsed.data
-    }
-  }
-
-  return null
-}
-
-function getResearchStepProgress(messages: ResearchAssistantMessage[]) {
-  const visitedStepNames = new Set<string>()
-  let currentStepName: string | undefined
-
-  for (const message of messages) {
-    if (message.role !== "user") continue
-
-    const parsed = researchMessageMetadataSchema.safeParse(message.metadata)
-    const action = parsed.success ? parsed.data?.action : undefined
-    if (!action) continue
-
-    visitedStepNames.add(action.stepName)
-    currentStepName = action.stepName
-  }
-
-  return { currentStepName, visitedStepNames }
-}
-
 export function getThreadUsage(messages: ResearchAssistantMessage[]) {
   const totals = {
     contextTokens: 0,
@@ -387,18 +348,6 @@ export function getThreadUsage(messages: ResearchAssistantMessage[]) {
 
 function formatTokenCount(value: number) {
   return new Intl.NumberFormat("en-US").format(value)
-}
-
-function isResearchPlanUpdating(messages: ResearchAssistantMessage[]) {
-  const message = messages.at(-1)
-  if (!message || message.role !== "assistant") return false
-
-  return message.parts.some(
-    (part) =>
-      part.type === "tool-update_plan" &&
-      part.state !== "output-available" &&
-      part.state !== "output-error"
-  )
 }
 
 function shouldSendAutomaticallyAfterToolCalls({
@@ -599,6 +548,7 @@ export default function Home() {
   const [providerOptionsError, setProviderOptionsError] = React.useState<
     string | null
   >(null)
+  const [reviewingNode, setReviewingNode] = React.useState<string | null>(null)
 
   const activeThread = React.useMemo(
     () =>
@@ -612,6 +562,57 @@ export default function Home() {
     () => new DefaultChatTransport<ResearchAssistantMessage>({ api: "/api/chat" }),
     []
   )
+
+  const generateScaffoldingMap = React.useCallback(async (
+    threadId: string,
+    settings: ChatSettings,
+    finishedMessages: ResearchAssistantMessage[]
+  ) => {
+    const sourceAssistantMessageId = [...finishedMessages].reverse().find((message) => message.role === "assistant")?.id
+    setStore((current) => ({
+      ...current,
+      threads: current.threads.map((thread) => thread.id === threadId ? {
+        ...thread,
+        scaffolding: { status: "generating", sourceAssistantMessageId },
+      } : thread),
+    }))
+    try {
+      const response = await fetch("/api/scaffolding/map", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          accessToken: accessToken.trim(),
+          threadId,
+          agentConfig: {
+            mode: "scaffolding",
+            provider: settings.provider,
+            model: settings.model,
+            thinkingEffort: settings.thinkingEffort,
+            providerOptions: parseProviderOptions(settings.providerOptions[settings.provider]),
+          },
+          messages: finishedMessages,
+        }),
+      })
+      if (!response.ok) throw new Error("Unable to generate the trajectory review.")
+      const result = await response.json() as ScaffoldMapResult & { trajectory: TrajectoryStep[] }
+      setStore((current) => ({
+        ...current,
+        threads: current.threads.map((thread) => thread.id === threadId ? {
+          ...thread,
+          updatedAt: new Date().toISOString(),
+          scaffolding: { status: "ready", sourceAssistantMessageId, mapResult: result, trajectory: result.trajectory, reviews: {}, ratings: {} },
+        } : thread),
+      }))
+    } catch (error) {
+      setStore((current) => ({
+        ...current,
+        threads: current.threads.map((thread) => thread.id === threadId ? {
+          ...thread,
+          scaffolding: { status: "error", sourceAssistantMessageId, error: error instanceof Error ? error.message : "Unable to generate review." },
+        } : thread),
+      }))
+    }
+  }, [accessToken])
 
   const {
     messages,
@@ -659,6 +660,10 @@ export default function Home() {
           }
         }),
       }))
+
+      if (activeThread.settings.mode === "scaffolding") {
+        void generateScaffoldingMap(activeThreadId, activeThread.settings, finishedMessages)
+      }
     },
   })
 
@@ -673,18 +678,6 @@ export default function Home() {
   const hasAccessToken = Boolean(accessToken.trim())
   const selectedModelMeta = selectedProviderMeta.models.find(
     (model) => model.value === activeThread?.settings.model
-  )
-  const researchPlan = React.useMemo(
-    () => getLatestResearchPlan(messages),
-    [messages]
-  )
-  const researchStepProgress = React.useMemo(
-    () => getResearchStepProgress(messages),
-    [messages]
-  )
-  const researchPlanUpdating = React.useMemo(
-    () => isResearchPlanUpdating(messages),
-    [messages]
   )
   const threadUsage = React.useMemo(() => getThreadUsage(messages), [messages])
 
@@ -829,7 +822,6 @@ export default function Home() {
     }
 
     clearError()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setComposerError(null)
     setProviderOptionsError(null)
     setMessages(thread.messages as ResearchAssistantMessage[])
@@ -852,6 +844,83 @@ export default function Home() {
       },
     }
   }, [accessToken, activeThread])
+
+  const startScaffoldingReview = React.useCallback(() => {
+    if (isStreaming) return
+    if (!hasAccessToken) {
+      setComposerError("Enter the workspace access token before starting a review.")
+      setSettingsOpen(true)
+      return
+    }
+    if (!messages.some((message) => message.role === "assistant")) {
+      toast.error("Complete a baseline response before starting its review.")
+      return
+    }
+    const settings: ChatSettings = { ...activeThread.settings, mode: "scaffolding" }
+    setStore((current) => ({
+      ...current,
+      threads: current.threads.map((thread) => thread.id === activeThread.id ? {
+        ...thread,
+        updatedAt: new Date().toISOString(),
+        settings,
+      } : thread),
+    }))
+    void generateScaffoldingMap(activeThread.id, settings, messages)
+  }, [activeThread, generateScaffoldingMap, hasAccessToken, isStreaming, messages])
+
+  const reviewScaffoldingNode = React.useCallback(async (node: ScaffoldNode) => {
+    const scaffold = activeThread.scaffolding
+    if (!scaffold?.mapResult || !scaffold.trajectory || scaffold.reviews?.[node.name]) return
+    setReviewingNode(node.name)
+    try {
+      const requestBody = createChatRequest()
+      const response = await fetch("/api/scaffolding/review", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...requestBody,
+          trajectory: scaffold.trajectory,
+          trajectorySummary: scaffold.mapResult.trajectory_summary,
+          nodeName: node.name,
+          stepIds: node.step_ids,
+        }),
+      })
+      if (!response.ok) throw new Error("Unable to generate the node review.")
+      const review = await response.json() as ScaffoldReviewResult
+      setStore((current) => ({
+        ...current,
+        threads: current.threads.map((thread) => thread.id === activeThread.id ? {
+          ...thread,
+          updatedAt: new Date().toISOString(),
+          scaffolding: thread.scaffolding ? {
+            ...thread.scaffolding,
+            reviews: { ...thread.scaffolding.reviews, [node.name]: review },
+          } : thread.scaffolding,
+        } : thread),
+      }))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to generate node review.")
+    } finally {
+      setReviewingNode(null)
+    }
+  }, [activeThread, createChatRequest])
+
+  const rateScaffoldingAnswer = React.useCallback((nodeName: string, questionIndex: number, rating: ScaffoldRating) => {
+    setStore((current) => ({
+      ...current,
+      threads: current.threads.map((thread) => thread.id === current.activeThreadId && thread.scaffolding ? {
+        ...thread,
+        updatedAt: new Date().toISOString(),
+        scaffolding: {
+          ...thread.scaffolding,
+          ratings: {
+            ...thread.scaffolding.ratings,
+            [nodeName]: { ...thread.scaffolding.ratings?.[nodeName], [questionIndex]: rating },
+          },
+        },
+      } : thread),
+    }))
+  }, [])
 
   const updateActiveThread = React.useCallback(
     (updater: (thread: ChatThread) => ChatThread) => {
@@ -1119,57 +1188,6 @@ export default function Home() {
     [addToolOutput, clearError, createChatRequest, hasAccessToken]
   )
 
-  const exploreResearchStep = React.useCallback(
-    async (step: ResearchPlanStep) => {
-      clearError()
-      setComposerError(null)
-
-      if (isStreaming || hasPendingQuestion) {
-        return
-      }
-
-      if (!hasAccessToken) {
-        setComposerError("Enter the workspace access token before continuing.")
-        setSettingsOpen(true)
-        return
-      }
-
-      try {
-        const requestBody = createChatRequest()
-        await sendMessage(
-          {
-            text: `Explore “${step.name}” next.`,
-            metadata: {
-              action: {
-                type: "explore_research_step",
-                stepName: step.name,
-              },
-            } satisfies ResearchMessageMetadata,
-          },
-          {
-            body: requestBody,
-          }
-        )
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Unable to explore the step."
-        setComposerError(message)
-        if (message.includes("Provider options")) {
-          setProviderOptionsError(message)
-          setSettingsOpen(true)
-        }
-      }
-    },
-    [
-      clearError,
-      createChatRequest,
-      hasAccessToken,
-      hasPendingQuestion,
-      isStreaming,
-      sendMessage,
-    ]
-  )
-
   const copyMessage = React.useCallback(async (message: UIMessage) => {
     const text = getMessageText(message)
 
@@ -1216,6 +1234,17 @@ export default function Home() {
             </div>
           </div>
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+            {activeThread.settings.mode === "baseline" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={startScaffoldingReview}
+                disabled={isStreaming || !messages.some((message) => message.role === "assistant")}
+              >
+                <RouteIcon data-icon="inline-start" />
+                Scaffold review
+              </Button>
+            )}
             <Select
               value={activeThread.settings.mode}
               onValueChange={(mode) => updateActiveSettings({ mode: mode as AgentMode })}
@@ -1225,7 +1254,7 @@ export default function Home() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="baseline">Baseline</SelectItem>
-                <SelectItem value="scaffolding" disabled>Scaffolding (soon)</SelectItem>
+                <SelectItem value="scaffolding">Scaffolding</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -1455,14 +1484,12 @@ export default function Home() {
             )}
           </div>
 
-          {activeThread.settings.mode === "scaffolding" && <aside className="order-first h-[min(34svh,300px)] shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[380px] lg:border-b-0 lg:border-l xl:w-[420px]">
-            <ResearchMetroMap
-              plan={researchPlan}
-              currentStepName={researchStepProgress.currentStepName}
-              visitedStepNames={researchStepProgress.visitedStepNames}
-              disabled={isStreaming || hasPendingQuestion}
-              isUpdating={researchPlanUpdating}
-              onSelectStep={exploreResearchStep}
+          {activeThread.settings.mode === "scaffolding" && <aside className="order-first h-[min(42svh,380px)] shrink-0 overflow-hidden border-b lg:order-last lg:h-auto lg:w-[380px] lg:border-b-0 lg:border-l xl:w-[420px]">
+            <ScaffoldingReview
+              state={activeThread.scaffolding}
+              reviewingNode={reviewingNode}
+              onReviewNode={reviewScaffoldingNode}
+              onRate={rateScaffoldingAnswer}
             />
           </aside>}
         </div>
@@ -2267,11 +2294,11 @@ function SettingsDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="baseline">Baseline</SelectItem>
-                      <SelectItem value="scaffolding" disabled>Scaffolding (coming soon)</SelectItem>
+                      <SelectItem value="scaffolding">Scaffolding</SelectItem>
                     </SelectContent>
                   </Select>
                   <FieldDescription>
-                    Baseline provides a general data-analysis agent. Guided scaffolding will be added later.
+                    Scaffolding runs the same agent, then adds a review map and guided node reviews.
                   </FieldDescription>
                 </Field>
                 <Field>

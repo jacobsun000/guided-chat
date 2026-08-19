@@ -68,9 +68,6 @@ export class ResearchAgentService {
     })
 
     try {
-      if (request.agentConfig.mode === "scaffolding") {
-        throw new Error("Scaffolding mode is not implemented yet.")
-      }
       const env = this.dependencies.env ?? process.env
       const manager = this.dependencies.sandboxManager ?? getSandboxManager()
       const tools = (this.dependencies.createTools ?? createBaselineTools)(

@@ -56,13 +56,18 @@ export function getThreadsStore(): ThreadsStore {
     .orderBy(desc(threads.updatedAt))
     .all()
     .map((thread): ChatThread => {
+      const stored = parseJson<unknown>(thread.messagesJson, [])
+      const envelope = stored && typeof stored === "object" && !Array.isArray(stored)
+        ? stored as { messages?: unknown; scaffolding?: ChatThread["scaffolding"] }
+        : null
       return normalizeThread({
         id: thread.id,
         title: thread.title,
         createdAt: thread.createdAt,
         updatedAt: thread.updatedAt,
-        messages: parseJson(thread.messagesJson, []),
+        messages: (envelope?.messages ?? stored) as ChatThread["messages"],
         settings: parseJson(thread.settingsJson, createDefaultSettings()),
+        scaffolding: envelope?.scaffolding,
       })
     })
 
@@ -118,7 +123,7 @@ export function saveThreadsStore(store: ThreadsStore): ThreadsStore {
           title: thread.title,
           createdAt: thread.createdAt,
           updatedAt: thread.updatedAt,
-          messagesJson: JSON.stringify(thread.messages),
+          messagesJson: JSON.stringify({ messages: thread.messages, scaffolding: thread.scaffolding }),
           settingsJson: JSON.stringify(thread.settings),
         }))
       )

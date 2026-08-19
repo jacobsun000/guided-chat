@@ -12,7 +12,7 @@ describe("agent mode prompts", () => {
     expect(BASELINE_SYSTEM_PROMPT.length).toBeLessThan(1_000)
   })
 
-  it("leaves scaffolding as an explicit placeholder", () => {
-    expect(SCAFFOLDING_SYSTEM_PROMPT).toContain("not implemented")
+  it("uses the baseline prompt for the main scaffolding chat agent", () => {
+    expect(SCAFFOLDING_SYSTEM_PROMPT).toBe(BASELINE_SYSTEM_PROMPT)
   })
 })

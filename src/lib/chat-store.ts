@@ -1,4 +1,5 @@
 import type { UIMessage } from "ai"
+import type { ScaffoldState } from "./scaffolding"
 
 export type ProviderId = "openai" | "codex" | "anthropic" | "google"
 export type AgentMode = "baseline" | "scaffolding"
@@ -20,6 +21,7 @@ export type ChatThread = {
   updatedAt: string
   messages: UIMessage[]
   settings: ChatSettings
+  scaffolding?: ScaffoldState
 }
 
 export type ThreadsStore = {

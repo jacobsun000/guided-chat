@@ -4,5 +4,5 @@ export const BASELINE_SYSTEM_PROMPT = `You are a data analysis agent. Help the u
 
 Use web_search to find current public information, read_image to inspect public images, exec to run commands and analyze files in the persistent /workspace sandbox, and apply_patch for every intentional file change. Selected @task and @dataset references appear in a validated <references> block with read-only paths under /tasks and /datasets; inspect those paths when relevant. Do not treat ordinary @ text as a validated reference.`
 
-// Placeholder for the future guided/scaffolded workflow.
-export const SCAFFOLDING_SYSTEM_PROMPT = `Scaffolding mode is not implemented yet.`
+// The main chat agent is intentionally identical in both modes.
+export const SCAFFOLDING_SYSTEM_PROMPT = BASELINE_SYSTEM_PROMPT
