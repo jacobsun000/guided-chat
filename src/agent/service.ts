@@ -27,7 +27,7 @@ export type ResearchAgentDependencies = {
 }
 
 export class ResearchAgentService {
-  constructor(private readonly dependencies: ResearchAgentDependencies = {}) {}
+  constructor(private readonly dependencies: ResearchAgentDependencies = {}) { }
 
   async stream(request: ResearchAgentRequest) {
     const requestId = crypto.randomUUID().slice(0, 8)
@@ -89,7 +89,7 @@ export class ResearchAgentService {
         instructions: RESEARCH_SYSTEM_PROMPT,
         providerOptions: normalizeProviderOptions(request.agentConfig),
         tools,
-        stopWhen: [hasToolCall("update_plan"), stepCountIs(40)],
+        stopWhen: [hasToolCall("update_plan"), stepCountIs(200)],
         onStepFinish: (step) => {
           completedSteps += 1
           const toolNames = step.toolCalls.map((call) => call.toolName)
