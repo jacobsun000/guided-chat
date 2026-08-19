@@ -958,7 +958,6 @@ export default function Home() {
   }, [])
 
   const queueScaffoldingSteering = React.useCallback((steering: ScaffoldSteering) => {
-    setInput((current) => current.trim() ? current : "Please address my Completion Review feedback.")
     setStore((current) => ({
       ...current,
       threads: current.threads.map((thread) => thread.id === current.activeThreadId && thread.scaffolding ? {
@@ -1162,8 +1161,8 @@ export default function Home() {
       setComposerError(null)
 
       const leadingWhitespace = input.match(/^\s*/)?.[0].length ?? 0
-      const text = input.trim()
       const pendingSteering = activeThread.scaffolding?.pendingSteering ?? []
+      const text = input.trim() || (pendingSteering.length ? "Address the attached Completion Review feedback." : "")
       const sentReferences = inputReferences.flatMap((reference) => {
         const start = reference.start - leadingWhitespace
         const end = reference.end - leadingWhitespace
@@ -1581,7 +1580,9 @@ export default function Home() {
                           placeholder={
                             hasPendingQuestion
                               ? "Answer the questions above..."
-                              : "Message..."
+                              : activeThread.scaffolding?.pendingSteering?.length
+                                ? "Add an optional note, or send the @ commands directly..."
+                                : "Message..."
                           }
                           rows={1}
                           disabled={isStreaming || hasPendingQuestion}
@@ -1611,7 +1612,7 @@ export default function Home() {
                                 type="submit"
                                 size="icon-sm"
                                 variant="default"
-                                disabled={!input.trim() || hasPendingQuestion}
+                                disabled={(!input.trim() && !(activeThread.scaffolding?.pendingSteering?.length)) || hasPendingQuestion}
                               >
                                 <SendIcon />
                                 <span className="sr-only">Send</span>
