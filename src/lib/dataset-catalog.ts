@@ -35,6 +35,12 @@ export const DATASET_CATALOG: DatasetCatalogEntry[] = [
     description:
       "Latest downloaded SEC XBRL-derived financial statement and notes releases: the 2026 Q1 financial statement set and the 2026 June notes set, converted from tab-delimited files to CSV.",
   },
+  {
+    slug: "tcga_pancancer_gene_expression",
+    name: "TCGA Pan-Cancer Atlas Gene Expression",
+    description:
+      "Open-access TCGA Pan-Cancer Atlas batch-adjusted RNA-seq gene expression for 33 cancer types, paired with curated clinical outcomes and sample quality annotations from the NCI Genomic Data Commons publication release.",
+  },
 ]
 
 export function getDatasetHref(slug: string) {

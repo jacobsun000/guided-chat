@@ -1,10 +1,11 @@
-// Keep runtime metadata outside the 20 GB raw-dataset tree so the dev bundler
-// never needs to traverse or watch the CSV directories.
+// Keep runtime metadata outside the raw-dataset tree so the dev bundler never
+// needs to traverse or watch the CSV directories.
 import olistMetadata from "@/data/datasets/olist_brazilian_ecommerce.json"
 import imdbMetadata from "@/data/datasets/imdb_non_commercial_datasets.json"
 import nycTlcMetadata from "@/data/datasets/nyc_tlc_trip_records.json"
 import hmdaMetadata from "@/data/datasets/hmda_mortgage.json"
 import secMetadata from "@/data/datasets/sec_financial_statement_notes.json"
+import tcgaMetadata from "@/data/datasets/tcga_pancancer_gene_expression.json"
 
 export type DatasetFile = {
   path: string
@@ -51,6 +52,10 @@ export const DATASETS: Dataset[] = [
   {
     slug: "sec_financial_statement_notes",
     metadata: secMetadata.dataset,
+  },
+  {
+    slug: "tcga_pancancer_gene_expression",
+    metadata: tcgaMetadata.dataset,
   },
 ]
 

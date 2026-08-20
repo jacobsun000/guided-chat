@@ -299,6 +299,66 @@
       "name": "Financially Resilient Companies",
       "content": "Which companies look best prepared to withstand financial stress?",
       "deliverables": "Submit a Markdown file named report.md identifying and ranking the companies assessed as resilient, defining the peer set and resilience criteria, tracing each conclusion to filing metrics or disclosures, testing at least one alternative weighting or stress scenario, and discussing uncertainty."
+    },
+    {
+      "id": "tcga-01",
+      "metadata": {
+        "verifiable": true,
+        "verificationMethod": "Reproduce within-cancer tumor-normal contrasts, audit barcode-derived sample classes and repeated patients, and test rankings under paired, unpaired, and alternative normalization choices.",
+        "difficulty": "medium"
+      },
+      "dataset": "tcga-pancancer-gene-expression",
+      "name": "Genes That Mark the Tumor State",
+      "content": "Which genes most clearly distinguish tumors from nearby normal tissue?",
+      "deliverables": "Submit a CSV file named tumor_markers.csv with cancer type, gene, cohort sizes, effect estimate, uncertainty or significance measure, and direction, plus a Markdown file named methodology.md defining eligible samples, comparisons, ranking rules, findings, and limitations."
+    },
+    {
+      "id": "tcga-02",
+      "metadata": {
+        "verifiable": false,
+        "verificationMethod": "Have cancer-genomics reviewers assess the selected programs, cancer groupings, biological interpretations, counterexamples, and stability under alternative gene filters and similarity definitions.",
+        "difficulty": "high"
+      },
+      "dataset": "tcga-pancancer-gene-expression",
+      "name": "Cancer Programs That Cross Organs",
+      "content": "Which cancers share expression programs despite arising in different organs?",
+      "deliverables": "Submit a Markdown file named report.md identifying the cross-cancer groups and gene programs, documenting the similarity definition and sample filters, presenting reproducible evidence and counterexamples, and explaining biological and technical limitations."
+    },
+    {
+      "id": "tcga-03",
+      "metadata": {
+        "verifiable": true,
+        "verificationMethod": "Rebuild patient-level expression and outcome cohorts, reproduce censored survival models, check leakage and proportional-hazards assumptions, and validate signals across held-out cancer types and endpoint choices.",
+        "difficulty": "high"
+      },
+      "dataset": "tcga-pancancer-gene-expression",
+      "name": "Expression Signals of Early Progression",
+      "content": "Which gene-expression patterns consistently signal earlier cancer progression?",
+      "deliverables": "Submit a CSV file named progression_signals.csv with genes or signatures, cancer scope, cohort sizes, effect estimates, uncertainty, and validation results, plus a Markdown file named methodology.md covering endpoint selection, censoring, modeling, validation, findings, and caveats."
+    },
+    {
+      "id": "tcga-04",
+      "metadata": {
+        "verifiable": false,
+        "verificationMethod": "Ask independent translational-oncology reviewers to challenge the molecular grouping, clinical contrasts, proposed strategy, causal assumptions, and robustness to cancer lineage and sample composition.",
+        "difficulty": "high"
+      },
+      "dataset": "tcga-pancancer-gene-expression",
+      "name": "Shared Molecular Vulnerabilities",
+      "content": "Where might distinct cancers share a useful molecular vulnerability?",
+      "deliverables": "Submit a text file named answer.txt naming the cancer groups and vulnerability, tracing the claim to expression and clinical evidence, discussing contradictory cases and plausible alternatives, and clearly separating evidence from therapeutic speculation."
+    },
+    {
+      "id": "tcga-05",
+      "metadata": {
+        "verifiable": false,
+        "verificationMethod": "Audit sample identities and quality flags, reproduce molecular outlier scores, then have domain reviewers classify representative cases and assess competing contamination, pathology, and biological explanations.",
+        "difficulty": "high"
+      },
+      "dataset": "tcga-pancancer-gene-expression",
+      "name": "Samples That Do Not Fit",
+      "content": "Which samples do not fit the molecular identity their labels imply?",
+      "deliverables": "Submit a CSV file named discordant_samples.csv with sample and patient barcodes, assigned cancer type, anomaly measures, quality evidence, and interpretation, plus a Markdown file named methodology.md defining the expected identity, detection rules, manual checks, findings, and false-positive risks."
     }
   ]
 }
